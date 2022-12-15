@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 // StatusFlag
 // /  7 6 5 4 3 2 1 0
 // /  N V _ B D I Z C
@@ -65,7 +63,6 @@ func New() *CPU {
 
 }
 func (cpu *CPU) addDisassembly(name InstructionName, mode AddressMode, addr uint16) {
-	fmt.Println(name, mode, addr)
 	cpu.Commons = append(cpu.Commons, Disassembly{
 		addr:        addr,
 		Instruction: name,
@@ -198,8 +195,8 @@ func (cpu *CPU) addInstructions() {
 	/* Branching */
 
 	// JMP
-	cpu.Lookup[0x4c] = NewInstruction(JMP, 3, 3, Immediate) //AddressingMode that acts as Immidiate
-	cpu.Lookup[0x6c] = NewInstruction(JMP, 3, 5, Implied)   //AddressingMode:Indirect with 6502 bug
+	cpu.Lookup[0x4c] = NewInstruction(JMP, 3, 3, Absolute) //AddressingMode that acts as Immidiate
+	cpu.Lookup[0x6c] = NewInstruction(JMP, 3, 5, Indirect) //AddressingMode:Indirect with 6502 bug
 
 	//JSR
 	cpu.Lookup[0x20] = NewInstruction(JSR, 3, 6, Absolute)
@@ -345,6 +342,10 @@ func (cpu *CPU) write16(addr uint16, data uint16) {
 	cpu.write(addr+1, hi)
 }
 
+func (cpu *CPU) Write(addr uint16, data uint8) {
+	cpu.Memory[addr] = data
+}
+
 func (cpu *CPU) write(addr uint16, data uint8) {
 	cpu.Memory[addr] = data
 }
@@ -401,23 +402,24 @@ func (cpu *CPU) Reset() {
 	cpu.X = 0x00
 	cpu.Y = 0x00
 	cpu.Status = 0x00
+	cpu.Status = 0b100100
 	cpu.PC = cpu.readU16(0xFFFC)
 }
 
-func (cpu *CPU) load(program []uint8) {
+func (cpu *CPU) Load(program []uint8) {
 	if len(program) == 0 {
 		return
 	}
-	addr := 0x8000
+	addr := 0x0600
 	for _, opcode := range program {
 		cpu.write(uint16(addr), opcode)
 		addr += 1
 	}
-	cpu.write16(0xFFFC, 0x8000)
+	cpu.write16(0xFFFC, 0x0600)
 
 }
 
-func (cpu *CPU) run() {
+func (cpu *CPU) Run() {
 	var opcode uint8
 	var pcStatus uint16
 	// CPU cycle
@@ -619,7 +621,8 @@ func (cpu *CPU) run() {
 }
 
 func (cpu *CPU) LoadAndRun(program []uint8) {
-	cpu.load(program)
+	cpu.Load(program)
 	cpu.Reset()
-	cpu.run()
+	cpu.Run()
+
 }

@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 type InstructionName string
 
 const (
@@ -208,9 +206,7 @@ func (cpu *CPU) SBC(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
 	cpu.addDisassembly(SBC, mode, addr)
 	value := ^cpu.read(addr)
-	fmt.Println(cpu.A, value, cpu.GetFlag(C))
 	tmp := uint16(cpu.A) + uint16(value) + uint16(cpu.GetFlag(C))
-	fmt.Printf("%x", tmp&0x00FF)
 
 	if tmp > 0xff {
 		cpu.SetFlag(C, true)
@@ -389,9 +385,9 @@ func (cpu *CPU) ASL(mode AddressMode) {
 // The bit that was in bit 0 is shifted into the carry flag. Bit 7 is set to zero.
 func (cpu *CPU) LSR(mode AddressMode) {
 	if mode == Accumulator {
-		value := uint16(cpu.A) >> 1
-		cpu.A = uint8(value)
-		cpu.SetFlag(C, value&0xFF00 != 0)
+		value := cpu.A
+		cpu.SetFlag(C, value&0x0001 != 0)
+		cpu.A = cpu.A >> 1
 		cpu.UpdateZeroAndNegativeFlag(cpu.A)
 	} else {
 		addr := cpu.getOperandAddress(mode)
@@ -701,9 +697,9 @@ func (cpu *CPU) RTI(mode AddressMode) {
 // to the program counter to cause a branch to a new location.
 // Function:    if(C == 0) pc = address
 func (cpu *CPU) BCC(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(C) == 0x00 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -712,9 +708,9 @@ func (cpu *CPU) BCC(mode AddressMode) {
 // to a new location.
 // Function:    if(C == 1) pc = address
 func (cpu *CPU) BCS(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(C) == 0x01 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -723,9 +719,9 @@ func (cpu *CPU) BCS(mode AddressMode) {
 // to a new location.
 // Function:    if(Z == 1) pc = address
 func (cpu *CPU) BEQ(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(Z) == 0x01 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -734,9 +730,9 @@ func (cpu *CPU) BEQ(mode AddressMode) {
 // to a new location.
 // Function:    if(N == 1) pc = address
 func (cpu *CPU) BMI(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(N) == 0x01 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -745,9 +741,9 @@ func (cpu *CPU) BMI(mode AddressMode) {
 // to a new location.
 // Function:    if(Z == 0) pc = address
 func (cpu *CPU) BNE(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(Z) == 0x00 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -756,9 +752,9 @@ func (cpu *CPU) BNE(mode AddressMode) {
 // to a new location.
 // Function:    if(N == 0) pc = address
 func (cpu *CPU) BPL(mode AddressMode) {
-	jump := uint16(cpu.read(cpu.PC))
+	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(N) == 0x00 {
-		cpu.PC += jump + 1
+		cpu.PC += uint16(jump) + 1
 	}
 }
 
@@ -824,7 +820,6 @@ func (cpu *CPU) TYA(mode AddressMode) {
 func (cpu *CPU) LDA(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
 	value := cpu.read(addr)
-	fmt.Printf("[%s]\tLDA - %X\n", mode, addr)
 	cpu.A = value
 	cpu.UpdateZeroAndNegativeFlag(cpu.A)
 }
