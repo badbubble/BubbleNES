@@ -1,5 +1,7 @@
 package cpu
 
+import "Nes/bus"
+
 // StatusFlag
 // /  7 6 5 4 3 2 1 0
 // /  N V _ B D I Z C
@@ -42,9 +44,8 @@ type CPU struct {
 	PC     uint16
 	SP     uint8
 
-	Memory [0xFFFF]uint8
-
 	Lookup  map[uint8]*Instruction
+	Bus     *bus.Bus
 	Commons []Disassembly
 }
 
@@ -53,9 +54,10 @@ func New() *CPU {
 		X:      0x00,
 		Y:      0x00,
 		A:      0x00,
-		Status: 0x00,
+		Status: 0b0010_0100,
 		SP:     StackTop,
 		PC:     0x00,
+		Bus:    bus.New(),
 	}
 	cpu.Lookup = make(map[uint8]*Instruction)
 	cpu.addInstructions()
@@ -325,7 +327,7 @@ func (cpu *CPU) GetFlag(flag StatusFlag) uint8 {
 }
 
 func (cpu *CPU) read(addr uint16) uint8 {
-	return cpu.Memory[addr]
+	return cpu.Bus.MemRead(addr)
 }
 
 func (cpu *CPU) readU16(addr uint16) uint16 {
@@ -343,11 +345,11 @@ func (cpu *CPU) write16(addr uint16, data uint16) {
 }
 
 func (cpu *CPU) Write(addr uint16, data uint8) {
-	cpu.Memory[addr] = data
+	cpu.Bus.MemWrite(addr, data)
 }
 
 func (cpu *CPU) write(addr uint16, data uint8) {
-	cpu.Memory[addr] = data
+	cpu.Bus.MemWrite(addr, data)
 }
 
 func (cpu *CPU) UpdateZeroAndNegativeFlag(result uint8) {
