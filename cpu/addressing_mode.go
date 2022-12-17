@@ -1,7 +1,5 @@
 package cpu
 
-import "fmt"
-
 type AddressMode string
 
 const (
@@ -144,9 +142,7 @@ func (cpu *CPU) Absolute() uint16 {
 // ROR CRC,X       ;Rotate right one bit
 func (cpu *CPU) AbsoluteX() uint16 {
 	addr := cpu.readU16(cpu.PC)
-	fmt.Printf("%X\n", addr)
 	addr += uint16(cpu.X)
-	fmt.Printf("%X\n", addr)
 	return addr & 0xFFFF
 }
 
@@ -214,9 +210,10 @@ func (cpu *CPU) IndirectX() uint16 {
 // STA (DST),Y     ;Store accumulator indirectly into memory
 func (cpu *CPU) IndirectY() uint16 {
 	baseAddr := uint16(cpu.read(cpu.PC))
-	baseAddr += uint16(cpu.Y)
-	baseAddr &= 0x00FF
+
 	lo := uint16(cpu.read(baseAddr))
 	hi := uint16(cpu.read((baseAddr + 1) & 0x00FF))
-	return (hi << 8) | lo
+	baseAddr = (hi << 8) | lo
+	baseAddr += uint16(cpu.Y)
+	return baseAddr
 }
