@@ -156,7 +156,6 @@ func NewInstruction(name InstructionName, len uint16, cycles uint16, mode Addres
 // If overflow occurs the carry bit is set, this enables multiple byte addition to be performed.
 func (cpu *CPU) ADC(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(ADC, mode, addr)
 	value := cpu.read(addr)
 
 	sum := uint16(cpu.A) + uint16(value) + uint16(cpu.GetFlag(C))
@@ -165,7 +164,7 @@ func (cpu *CPU) ADC(mode AddressMode) {
 	} else {
 		cpu.SetFlag(C, false)
 	}
-	if (uint16(cpu.A)^uint16(value))&(uint16(cpu.A)^sum)&0x0080 != 0 {
+	if ^(uint16(cpu.A)^uint16(value))&(uint16(cpu.A)^sum)&0x0080 != 0 {
 		cpu.SetFlag(V, true)
 	} else {
 		cpu.SetFlag(V, false)
@@ -391,10 +390,12 @@ func (cpu *CPU) LSR(mode AddressMode) {
 		cpu.UpdateZeroAndNegativeFlag(cpu.A)
 	} else {
 		addr := cpu.getOperandAddress(mode)
-		value := uint16(cpu.read(addr)) >> 1
-		cpu.write(addr, uint8(value))
-		cpu.SetFlag(C, value&0xFF00 != 0)
-		cpu.UpdateZeroAndNegativeFlag(uint8(value))
+		value := cpu.read(addr)
+		result := value >> 1
+		cpu.SetFlag(C, value&0x0001 != 0)
+		cpu.write(addr, result)
+
+		cpu.UpdateZeroAndNegativeFlag(result)
 	}
 }
 
@@ -423,14 +424,14 @@ func (cpu *CPU) ROL(mode AddressMode) {
 func (cpu *CPU) ROR(mode AddressMode) {
 	if mode == Accumulator {
 		value := (uint16(cpu.A) >> 1) | uint16(cpu.GetFlag(C))<<7
-		cpu.SetFlag(C, value&0x0001 != 0)
+		cpu.SetFlag(C, cpu.A&0x0001 != 0)
 		cpu.A = uint8(value)
 		cpu.UpdateZeroAndNegativeFlag(cpu.A)
 	} else {
 		addr := cpu.getOperandAddress(mode)
 		value := cpu.read(addr)
 		tmp := (uint16(value) >> 1) | uint16(cpu.GetFlag(C))<<7
-		cpu.SetFlag(C, tmp&0x0001 != 0)
+		cpu.SetFlag(C, cpu.A&0x0001 != 0)
 		cpu.write(addr, uint8(tmp))
 		cpu.UpdateZeroAndNegativeFlag(uint8(tmp))
 	}
@@ -490,8 +491,8 @@ func (cpu *CPU) BIT(mode AddressMode) {
 	value := cpu.read(addr)
 	tmp := cpu.A & value
 
-	cpu.SetFlag(N, cpu.A&0x80 != 0)
-	cpu.SetFlag(V, cpu.A&0x40 != 0)
+	cpu.SetFlag(N, value&0x80 != 0)
+	cpu.SetFlag(V, value&0x40 != 0)
 	cpu.SetFlag(Z, tmp == 0)
 }
 
@@ -754,6 +755,26 @@ func (cpu *CPU) BNE(mode AddressMode) {
 func (cpu *CPU) BPL(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(N) == 0x00 {
+		cpu.PC += uint16(jump) + 1
+	}
+}
+
+// BVS Branch if Overflow Set
+// Function:    if(V == 1) pc = address
+func (cpu *CPU) BVS(mode AddressMode) {
+	jump := int8(cpu.read(cpu.PC))
+	if cpu.GetFlag(V) == 0x01 {
+		cpu.PC += uint16(jump) + 1
+	}
+}
+
+// BVC Branch if Overflow Clear.
+// If the overflow flag is clear then add the relative displacement to the program counter to cause a branch
+// to a new location.
+// Function:    if(V == 0) pc = address
+func (cpu *CPU) BVC(mode AddressMode) {
+	jump := int8(cpu.read(cpu.PC))
+	if cpu.GetFlag(V) == 0x00 {
 		cpu.PC += uint16(jump) + 1
 	}
 }
