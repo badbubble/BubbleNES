@@ -1,6 +1,9 @@
 package cpu
 
-import "Nes/bus"
+import (
+	"Nes/bus"
+	"fmt"
+)
 
 // StatusFlag
 // /  7 6 5 4 3 2 1 0
@@ -49,7 +52,7 @@ type CPU struct {
 	Commons []Disassembly
 }
 
-func New() *CPU {
+func New(bus *bus.Bus) *CPU {
 	cpu := &CPU{
 		X:      0x00,
 		Y:      0x00,
@@ -57,7 +60,7 @@ func New() *CPU {
 		Status: 0b0010_0100,
 		SP:     StackTop,
 		PC:     0x00,
-		Bus:    bus.New(),
+		Bus:    bus,
 	}
 	cpu.Lookup = make(map[uint8]*Instruction)
 	cpu.addInstructions()
@@ -197,8 +200,8 @@ func (cpu *CPU) addInstructions() {
 	/* Branching */
 
 	// JMP
-	cpu.Lookup[0x4c] = NewInstruction(JMP, 3, 3, Absolute) //AddressingMode that acts as Immidiate
-	cpu.Lookup[0x6c] = NewInstruction(JMP, 3, 5, Indirect) //AddressingMode:Indirect with 6502 bug
+	cpu.Lookup[0x4c] = NewInstruction(JMP, 3, 3, Absolute) // Absolute AddressingMode that acts as Immidiate
+	cpu.Lookup[0x6c] = NewInstruction(JMP, 3, 5, Indirect) // Indirect AddressingMode:Indirect with 6502 bug
 
 	//JSR
 	cpu.Lookup[0x20] = NewInstruction(JSR, 3, 6, Absolute)
@@ -366,6 +369,65 @@ func (cpu *CPU) UpdateZeroAndNegativeFlag(result uint8) {
 	}
 }
 
+func (cpu *CPU) getAbsoluteAddress(mode AddressMode, addr uint16) uint16 {
+	switch mode {
+	case Immediate:
+		return addr
+	case Implied:
+		return 0x0000
+	case Accumulator:
+		return 0x0000
+	case ZeroPage:
+		return uint16(cpu.read(addr))
+	case ZeroPageX:
+		zeroAddr := cpu.read(addr)
+		zeroAddr += cpu.X
+		// wraps around
+		return uint16(zeroAddr) & 0x00FF
+	case ZeroPageY:
+		zeroAddr := cpu.read(addr)
+		zeroAddr += cpu.Y
+		// wraps around
+		return uint16(zeroAddr) & 0x00FF
+	case Absolute:
+		return cpu.readU16(addr)
+	case AbsoluteX:
+		addr := cpu.readU16(addr)
+		addr += uint16(cpu.X)
+		return addr & 0xFFFF
+	case AbsoluteY:
+		addr := cpu.readU16(addr)
+		addr += uint16(cpu.Y)
+		return addr & 0xFFFF
+	case Relative:
+		offset := uint16(cpu.read(addr))
+		if offset < 0x80 {
+			return addr + 1 + offset
+		} else {
+			return addr + 1 - (offset | 0b0111_1111)
+		}
+	case Indirect:
+		inAddr := cpu.readU16(addr)
+		return cpu.readU16(inAddr)
+	case IndirectX:
+		baseAddr := uint16(cpu.read(addr))
+		baseAddr += uint16(cpu.X)
+		baseAddr &= 0x00FF
+		lo := uint16(cpu.read(baseAddr))
+		hi := uint16(cpu.read((baseAddr + 1) & 0x00FF))
+		return (hi << 8) | lo
+	case IndirectY:
+		baseAddr := uint16(cpu.read(addr))
+		lo := uint16(cpu.read(baseAddr))
+		hi := uint16(cpu.read((baseAddr + 1) & 0x00FF))
+		baseAddr = (hi << 8) | lo
+		baseAddr += uint16(cpu.Y)
+		return baseAddr
+	default:
+		return 0x0000
+	}
+}
+
 func (cpu *CPU) getOperandAddress(mode AddressMode) uint16 {
 	switch mode {
 	case Immediate:
@@ -395,7 +457,7 @@ func (cpu *CPU) getOperandAddress(mode AddressMode) uint16 {
 	case IndirectY:
 		return cpu.IndirectY()
 	default:
-		return 0x0000
+		return 0x000
 	}
 }
 
@@ -426,6 +488,7 @@ func (cpu *CPU) Run() {
 	var pcStatus uint16
 	// CPU cycle
 	for {
+		fmt.Println(cpu.Trace())
 		opcode = cpu.read(cpu.PC)
 		mode := cpu.Lookup[opcode].Mode
 		cpu.PC += 1
@@ -568,7 +631,7 @@ func (cpu *CPU) Run() {
 			cpu.BCS(mode)
 		// BEQ
 		case 0xf0:
-			cpu.BCC(mode)
+			cpu.BEQ(mode)
 		// BMI
 		case 0x30:
 			cpu.BMI(mode)
@@ -578,6 +641,12 @@ func (cpu *CPU) Run() {
 		// BPL
 		case 0x10:
 			cpu.BPL(mode)
+		// BVS
+		case 0x70:
+			cpu.BVS(mode)
+		// BVC
+		case 0x50:
+			cpu.BVC(mode)
 		/* Register Transfers */
 		// TAX
 		case 0xaa:
