@@ -3,63 +3,84 @@ package cpu
 type InstructionName string
 
 const (
-	ADC InstructionName = "ADC"
-	AND InstructionName = "AND"
-	ASL InstructionName = "ASL"
-	BCC InstructionName = "BCC"
-	BCS InstructionName = "BCS"
-	BEQ InstructionName = "BEQ"
-	BIT InstructionName = "BIT"
-	BMI InstructionName = "BMI"
-	BNE InstructionName = "BNE"
-	BPL InstructionName = "BPL"
-	BRK InstructionName = "BRK"
-	BVC InstructionName = "BVC"
-	BVS InstructionName = "BVS"
-	CLC InstructionName = "CLC"
-	CLD InstructionName = "CLD"
-	CLI InstructionName = "CLI"
-	CLV InstructionName = "CLV"
-	CMP InstructionName = "CMP"
-	CPX InstructionName = "CPX"
-	CPY InstructionName = "CPY"
-	DEC InstructionName = "DEC"
-	DEX InstructionName = "DEX"
-	DEY InstructionName = "DEY"
-	EOR InstructionName = "EOR"
-	INC InstructionName = "INC"
-	INX InstructionName = "INX"
-	INY InstructionName = "INY"
-	JMP InstructionName = "JMP"
-	JSR InstructionName = "JSR"
-	LDA InstructionName = "LDA"
-	LDX InstructionName = "LDX"
-	LDY InstructionName = "LDY"
-	LSR InstructionName = "LSR"
-	NOP InstructionName = "NOP"
-	ORA InstructionName = "ORA"
-	PHA InstructionName = "PHA"
-	PHP InstructionName = "PHP"
-	PLA InstructionName = "PLA"
-	PLP InstructionName = "PLP"
-	ROL InstructionName = "ROL"
-	ROR InstructionName = "ROR"
-	RTI InstructionName = "RTI"
-	RTS InstructionName = "RTS"
-	SBC InstructionName = "SBC"
-	SEC InstructionName = "SEC"
-	SED InstructionName = "SED"
-	SEI InstructionName = "SEI"
-	STA InstructionName = "STA"
-	STX InstructionName = "STX"
-	STY InstructionName = "STY"
-	TAX InstructionName = "TAX"
-	TAY InstructionName = "TAY"
-	TSX InstructionName = "TSX"
-	TXA InstructionName = "TXA"
-	TXS InstructionName = "TXS"
-	TYA InstructionName = "TYA"
-	XXX InstructionName = "XXX"
+	ADC  InstructionName = "ADC"
+	AND  InstructionName = "AND"
+	ASL  InstructionName = "ASL"
+	BCC  InstructionName = "BCC"
+	BCS  InstructionName = "BCS"
+	BEQ  InstructionName = "BEQ"
+	BIT  InstructionName = "BIT"
+	BMI  InstructionName = "BMI"
+	BNE  InstructionName = "BNE"
+	BPL  InstructionName = "BPL"
+	BRK  InstructionName = "BRK"
+	BVC  InstructionName = "BVC"
+	BVS  InstructionName = "BVS"
+	CLC  InstructionName = "CLC"
+	CLD  InstructionName = "CLD"
+	CLI  InstructionName = "CLI"
+	CLV  InstructionName = "CLV"
+	CMP  InstructionName = "CMP"
+	CPX  InstructionName = "CPX"
+	CPY  InstructionName = "CPY"
+	DEC  InstructionName = "DEC"
+	DEX  InstructionName = "DEX"
+	DEY  InstructionName = "DEY"
+	EOR  InstructionName = "EOR"
+	INC  InstructionName = "INC"
+	INX  InstructionName = "INX"
+	INY  InstructionName = "INY"
+	JMP  InstructionName = "JMP"
+	JSR  InstructionName = "JSR"
+	LDA  InstructionName = "LDA"
+	LDX  InstructionName = "LDX"
+	LDY  InstructionName = "LDY"
+	LSR  InstructionName = "LSR"
+	NOP  InstructionName = "NOP"
+	ORA  InstructionName = "ORA"
+	PHA  InstructionName = "PHA"
+	PHP  InstructionName = "PHP"
+	PLA  InstructionName = "PLA"
+	PLP  InstructionName = "PLP"
+	ROL  InstructionName = "ROL"
+	ROR  InstructionName = "ROR"
+	RTI  InstructionName = "RTI"
+	RTS  InstructionName = "RTS"
+	SBC  InstructionName = "SBC"
+	SEC  InstructionName = "SEC"
+	SED  InstructionName = "SED"
+	SEI  InstructionName = "SEI"
+	STA  InstructionName = "STA"
+	STX  InstructionName = "STX"
+	STY  InstructionName = "STY"
+	TAX  InstructionName = "TAX"
+	TAY  InstructionName = "TAY"
+	TSX  InstructionName = "TSX"
+	TXA  InstructionName = "TXA"
+	TXS  InstructionName = "TXS"
+	TYA  InstructionName = "TYA"
+	XXX  InstructionName = "XXX"
+	DCP  InstructionName = "*DCP"
+	RLA  InstructionName = "*RLA"
+	SLO  InstructionName = "*SLO"
+	SRE  InstructionName = "*SRE"
+	NOPU InstructionName = "*NOP"
+	AXS  InstructionName = "*AXS"
+	ARR  InstructionName = "*ARR"
+	SBCU InstructionName = "*SBC"
+	ANC  InstructionName = "*ANC"
+	ALR  InstructionName = "*ALR"
+	RRA  InstructionName = "*RRA"
+	ISB  InstructionName = "*ISB"
+	LXA  InstructionName = "*LXA"
+	XAA  InstructionName = "*XAA"
+	LAS  InstructionName = "*LAS"
+	TAS  InstructionName = "*TAS"
+	AHX  InstructionName = "*AHX"
+	SHX  InstructionName = "*SHX"
+	SHY  InstructionName = "*SHY"
+	LAX  InstructionName = "*LAX"
+	SAX  InstructionName = "*SAX"
 )
 
 type Instruction struct {
@@ -203,7 +224,6 @@ func (cpu *CPU) ADC(mode AddressMode) {
 // before.
 func (cpu *CPU) SBC(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(SBC, mode, addr)
 	value := ^cpu.read(addr)
 	tmp := uint16(cpu.A) + uint16(value) + uint16(cpu.GetFlag(C))
 
@@ -231,8 +251,6 @@ func (cpu *CPU) SBC(mode AddressMode) {
 // Flags Out:   N, C, Z
 func (cpu *CPU) CMP(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(CMP, mode, addr)
-
 	value := cpu.read(addr)
 	cpu.SetFlag(C, cpu.A >= value)
 	cpu.SetFlag(Z, (cpu.A-value)&0x00FF == 0)
@@ -247,8 +265,6 @@ func (cpu *CPU) CMP(mode AddressMode) {
 // Flags Out:   N, C, Z
 func (cpu *CPU) CPX(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(CPX, mode, addr)
-
 	value := cpu.read(addr)
 
 	cpu.SetFlag(C, cpu.X >= value)
@@ -264,8 +280,6 @@ func (cpu *CPU) CPX(mode AddressMode) {
 // Flags Out:   N, C, Z
 func (cpu *CPU) CPY(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(CPY, mode, addr)
-
 	value := cpu.read(addr)
 
 	cpu.SetFlag(C, cpu.Y >= value)
@@ -285,8 +299,6 @@ func (cpu *CPU) CPY(mode AddressMode) {
 // Flags Out:   N, Z
 func (cpu *CPU) INC(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(INC, mode, addr)
-
 	value := cpu.read(addr)
 	value += 1
 	cpu.write(addr, value)
@@ -299,8 +311,6 @@ func (cpu *CPU) INC(mode AddressMode) {
 // Flags Out:   N, Z
 func (cpu *CPU) DEC(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
-	cpu.addDisassembly(DEC, mode, addr)
-
 	value := cpu.read(addr)
 	value -= 1
 	cpu.write(addr, value)
@@ -312,8 +322,6 @@ func (cpu *CPU) DEC(mode AddressMode) {
 // Function:    X = X + 1
 // Flags Out:   N, Z
 func (cpu *CPU) INX(mode AddressMode) {
-	cpu.addDisassembly(INX, mode, 0x0000)
-
 	cpu.X += 0x01
 	cpu.UpdateZeroAndNegativeFlag(cpu.X)
 }
@@ -323,8 +331,6 @@ func (cpu *CPU) INX(mode AddressMode) {
 // Function:    X = X - 1
 // Flags Out:   N, Z
 func (cpu *CPU) DEX(mode AddressMode) {
-	cpu.addDisassembly(DEX, mode, 0x0000)
-
 	cpu.X -= 0x01
 	cpu.UpdateZeroAndNegativeFlag(cpu.X)
 }
@@ -334,8 +340,6 @@ func (cpu *CPU) DEX(mode AddressMode) {
 // Function:    Y = Y + 1
 // Flags Out:   N, Z
 func (cpu *CPU) INY(mode AddressMode) {
-	cpu.addDisassembly(INY, mode, 0x0000)
-
 	cpu.Y += 0x01
 	cpu.UpdateZeroAndNegativeFlag(cpu.Y)
 }
@@ -345,7 +349,6 @@ func (cpu *CPU) INY(mode AddressMode) {
 // Function:    Y = Y - 1
 // Flags Out:   N, Z
 func (cpu *CPU) DEY(mode AddressMode) {
-	cpu.addDisassembly(DEY, mode, 0x0000)
 	cpu.Y -= 0x01
 	cpu.UpdateZeroAndNegativeFlag(cpu.Y)
 }
@@ -431,7 +434,7 @@ func (cpu *CPU) ROR(mode AddressMode) {
 		addr := cpu.getOperandAddress(mode)
 		value := cpu.read(addr)
 		tmp := (uint16(value) >> 1) | uint16(cpu.GetFlag(C))<<7
-		cpu.SetFlag(C, cpu.A&0x0001 != 0)
+		cpu.SetFlag(C, value&0x0001 != 0)
 		cpu.write(addr, uint8(tmp))
 		cpu.UpdateZeroAndNegativeFlag(uint8(tmp))
 	}
@@ -452,8 +455,7 @@ func (cpu *CPU) AND(mode AddressMode) {
 
 	cpu.A &= value
 
-	cpu.SetFlag(N, cpu.A&0x80 != 0)
-	cpu.SetFlag(Z, cpu.A == 0)
+	cpu.UpdateZeroAndNegativeFlag(cpu.A)
 }
 
 // EOR Bitwise Exclusive OR
@@ -889,4 +891,152 @@ func (cpu *CPU) STX(mode AddressMode) {
 func (cpu *CPU) STY(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
 	cpu.write(addr, cpu.Y)
+}
+
+// DCP Decrement memory then Compare with A - DEC + CMP
+func (cpu *CPU) DCP(mode AddressMode) {
+	cpu.DEC(mode)
+	cpu.CMP(mode)
+}
+
+// RLA Rotate Left then 'And' - ROL + AND
+func (cpu *CPU) RLA(mode AddressMode) {
+	cpu.ROL(mode)
+	cpu.AND(mode)
+}
+
+// SLO Shift Left then 'Or' - ASL + ORA
+func (cpu *CPU) SLO(mode AddressMode) {
+	cpu.ASL(mode)
+	cpu.ORA(mode)
+}
+
+// SRE Shift Right then "Exclusive-Or" - LSR + EOR
+func (cpu *CPU) SRE(mode AddressMode) {
+	cpu.LSR(mode)
+	cpu.EOR(mode)
+}
+
+// NOPU - do nothing
+func (cpu *CPU) NOPU(mode AddressMode) {
+}
+
+// AXS - A 'And' X, then Subtract memory, to X
+func (cpu *CPU) AXS(mode AddressMode) {
+	addr := cpu.getOperandAddress(mode)
+	value := cpu.read(addr)
+	cpu.SetFlag(C, value <= cpu.A&cpu.X)
+	result := cpu.A&cpu.X - value
+	cpu.UpdateZeroAndNegativeFlag(result)
+	cpu.X = result
+}
+
+// ARR - AND then Rotate Right - AND+ROR
+func (cpu *CPU) ARR(mode AddressMode) {
+	cpu.AND(mode)
+	cpu.ROR(mode)
+	result := cpu.A
+	bit5 := (result >> 5) & 1
+	bit6 := (result >> 6) & 1
+	cpu.SetFlag(C, bit6 == 1)
+	cpu.SetFlag(V, bit5^bit6 == 1)
+	cpu.UpdateZeroAndNegativeFlag(result)
+}
+
+// ANC -AND then copy N to C
+func (cpu *CPU) ANC(mode AddressMode) {
+	cpu.AND(mode)
+	cpu.SetFlag(C, cpu.GetFlag(N) == 0x01)
+}
+
+// ALR - And then Logical Shift Right - AND+LSR
+func (cpu *CPU) ALR(mode AddressMode) {
+	cpu.AND(mode)
+	cpu.LSR(mode)
+}
+
+// RRA - Rotate Right then Add with Carry - ROR + ADC
+func (cpu *CPU) RRA(mode AddressMode) {
+	cpu.ROR(mode)
+	cpu.ADC(mode)
+}
+
+// ISB -  Increment memory then Subtract with Carry - INC + SBC
+func (cpu *CPU) ISB(mode AddressMode) {
+	cpu.INC(mode)
+	cpu.SBC(mode)
+}
+
+// LXA LDA + TAX
+func (cpu *CPU) LXA(mode AddressMode) {
+	cpu.LDA(mode)
+	cpu.TAX(mode)
+}
+
+// XAA TAX + AND
+func (cpu *CPU) XAA(mode AddressMode) {
+	cpu.TAX(mode)
+	cpu.AND(mode)
+}
+
+// LAS
+func (cpu *CPU) LAS(mode AddressMode) {
+
+	addr := cpu.getOperandAddress(mode)
+	value := cpu.read(addr)
+	result := value & cpu.SP
+	cpu.A = result
+	cpu.X = result
+	cpu.SP = result
+	cpu.UpdateZeroAndNegativeFlag(result)
+}
+
+// TAS
+func (cpu *CPU) TAS(mode AddressMode) {
+	value := cpu.A & cpu.X
+	cpu.SP = value
+	addr := cpu.readU16(cpu.PC) + uint16(cpu.Y)
+
+	result := (uint8(addr>>8) + 1) & cpu.SP
+	cpu.write(addr, result)
+}
+
+func (cpu *CPU) AHX(mode AddressMode) {
+	switch mode {
+	case IndirectY:
+		pos := uint16(cpu.read(cpu.PC))
+		addr := cpu.readU16(pos) + uint16(cpu.Y)
+		value := cpu.A & cpu.X & uint8(addr>>8)
+		cpu.write(addr, value)
+	case AbsoluteY:
+		addr := cpu.readU16(cpu.PC) + uint16(cpu.Y)
+		value := cpu.A & cpu.X & uint8(addr>>8)
+		cpu.write(addr, value)
+	}
+}
+
+func (cpu *CPU) SHX(mode AddressMode) {
+	addr := cpu.readU16(cpu.PC) + uint16(cpu.X)
+	result := cpu.Y & (uint8(addr>>8) + 1)
+	cpu.write(addr, result)
+}
+
+func (cpu *CPU) SHY(mode AddressMode) {
+	addr := cpu.readU16(cpu.PC) + uint16(cpu.Y)
+	result := cpu.X & (uint8(addr>>8) + 1)
+	cpu.write(addr, result)
+}
+
+func (cpu *CPU) LAX(mode AddressMode) {
+	addr := cpu.getOperandAddress(mode)
+	value := cpu.read(addr)
+	cpu.A = value
+	cpu.UpdateZeroAndNegativeFlag(cpu.A)
+	cpu.X = cpu.A
+}
+
+func (cpu *CPU) SAX(mode AddressMode) {
+	value := cpu.A & cpu.X
+	addr := cpu.getOperandAddress(mode)
+	cpu.write(addr, value)
 }
