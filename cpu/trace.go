@@ -12,7 +12,6 @@ func (cpu *CPU) Trace() string {
 	var hexStr string
 	var asmStr string
 	var tmpStr string
-
 	code := cpu.read(cpu.PC)
 	ops := cpu.Lookup[code]
 	begin := cpu.PC
@@ -52,7 +51,7 @@ func (cpu *CPU) Trace() string {
 		case IndirectY:
 			tmpStr = fmt.Sprintf("($%02X),Y = %04X @ %04X = %02X", address, memAddr-uint16(cpu.Y), memAddr, value)
 		case Relative:
-			tmpStr = fmt.Sprintf("$%04X", memAddr)
+			tmpStr = fmt.Sprintf("$%04X", uint16(begin)+2+uint16(int8(address)))
 		default:
 			panic(fmt.Sprintf("unexpected mode %s for ops has two bytes", ops.Mode))
 		}
