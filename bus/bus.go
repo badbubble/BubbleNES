@@ -1,6 +1,9 @@
 package bus
 
-import "Nes/cartridge"
+import (
+	"Nes/cartridge"
+	"fmt"
+)
 
 //  _______________ $10000  _______________
 // | PRG-ROM       |       |               |
@@ -54,11 +57,15 @@ func (bus *Bus) MemRead(addr uint16) uint8 {
 		return bus.CPURam[addr&CPUMaxRam] // 0x07ff
 	case addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd:
 		// MirrorsDownAddr := addr & MaxPPURam //
+		fmt.Printf("Ignoring mem access at %d\n", addr)
 		//TODO implement PPU
 		return 0
 
 	case addr >= 0x8000:
 		return bus.ReadPRGRom(addr)
+	default:
+		fmt.Printf("Ignoring mem access at %d\n", addr)
+
 	}
 	return 0
 }
@@ -69,10 +76,14 @@ func (bus *Bus) MemWrite(addr uint16, data uint8) {
 		bus.CPURam[addr&CPUMaxRam] = data
 	case addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd:
 		//TODO implement PPU
+		fmt.Printf("Ignoring mem write-access at %d\n", addr)
 		bus.CPURam[addr&PPUMaxRam] = data
 		//
 	case addr >= 0x8000:
 		panic("Attempt to write to Cartridge ROM space")
+	default:
+		fmt.Printf("Ignoring mem write-access at %d\n", addr)
+
 	}
 }
 
