@@ -141,9 +141,10 @@ func (cpu *CPU) Absolute() uint16 {
 // STA $3000,X     ;Store accumulator between $3000 and $30FF
 // ROR CRC,X       ;Rotate right one bit
 func (cpu *CPU) AbsoluteX() uint16 {
-	addr := cpu.readU16(cpu.PC)
-	addr += uint16(cpu.X)
-	return addr & 0xFFFF
+	source := cpu.readU16(cpu.PC)
+	result := uint16(cpu.X)
+	cpu.PageCross(source, result)
+	return result & 0xFFFF
 }
 
 // AbsoluteY with Y Offset
@@ -155,9 +156,10 @@ func (cpu *CPU) AbsoluteX() uint16 {
 // AND $4000,Y     ;Perform a logical AND with a byte of memory
 // STA MEM,Y       ;Store accumulator in memory
 func (cpu *CPU) AbsoluteY() uint16 {
-	addr := cpu.readU16(cpu.PC)
-	addr += uint16(cpu.Y)
-	return addr & 0xFFFF
+	source := cpu.readU16(cpu.PC)
+	result := uint16(cpu.Y)
+	cpu.PageCross(source, result)
+	return result & 0xFFFF
 }
 
 // Indirect
@@ -213,7 +215,8 @@ func (cpu *CPU) IndirectY() uint16 {
 
 	lo := uint16(cpu.read(baseAddr))
 	hi := uint16(cpu.read((baseAddr + 1) & 0x00FF))
-	baseAddr = (hi << 8) | lo
-	baseAddr += uint16(cpu.Y)
-	return baseAddr
+	source := (hi << 8) | lo
+	result := source + uint16(cpu.Y)
+	cpu.PageCross(source, result)
+	return result
 }
