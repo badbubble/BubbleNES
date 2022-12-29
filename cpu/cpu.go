@@ -453,7 +453,7 @@ func (cpu *CPU) GetFlag(flag StatusFlag) uint8 {
 }
 
 func (cpu *CPU) read(addr uint16) uint8 {
-	return cpu.Bus.MemRead(addr)
+	return cpu.Bus.CPUMemRead(addr)
 }
 
 func (cpu *CPU) readU16(addr uint16) uint16 {
@@ -471,11 +471,11 @@ func (cpu *CPU) write16(addr uint16, data uint16) {
 }
 
 func (cpu *CPU) Write(addr uint16, data uint8) {
-	cpu.Bus.MemWrite(addr, data)
+	cpu.Bus.CPUMemWrite(addr, data)
 }
 
 func (cpu *CPU) write(addr uint16, data uint8) {
-	cpu.Bus.MemWrite(addr, data)
+	cpu.Bus.CPUMemWrite(addr, data)
 }
 
 func (cpu *CPU) UpdateZeroAndNegativeFlag(result uint8) {
@@ -489,6 +489,12 @@ func (cpu *CPU) UpdateZeroAndNegativeFlag(result uint8) {
 		cpu.SetFlag(N, true)
 	} else {
 		cpu.SetFlag(N, false)
+	}
+}
+
+func (cpu *CPU) PageCross(source uint16, result uint16) {
+	if source&0xFF00 != result&0xFF00 {
+		cpu.Bus.Tick(1)
 	}
 }
 
@@ -611,6 +617,10 @@ func (cpu *CPU) Run() {
 	var pcStatus uint16
 	// CPU cycle
 	for {
+
+		if cpu.Bus.PPU.IsNMI {
+			cpu.NMI()
+		}
 		fmt.Println(cpu.Trace())
 		opcode = cpu.read(cpu.PC)
 		mode := cpu.Lookup[opcode].Mode
@@ -871,6 +881,8 @@ func (cpu *CPU) Run() {
 		case 0xea:
 			cpu.NOP(mode)
 		}
+
+		cpu.Bus.Tick(uint(cpu.Lookup[opcode].Cycles))
 
 		if pcStatus == cpu.PC {
 			cpu.PC += cpu.Lookup[opcode].Length - 1
