@@ -4,7 +4,6 @@ import (
 	"Nes/cartridge"
 	"Nes/ppu"
 	"fmt"
-	"log"
 )
 
 //  _______________ $10000  _______________
@@ -52,25 +51,23 @@ type Bus struct {
 	// Nes cpu only address 2kb
 	CPURam [CPURamSize]uint8
 	PPURam [PPURamSize]uint8
-	Rom    *cartridge.Rom
+	Cart   *cartridge.Cartridge
 	PPU    *ppu.PPU
-	Cycles uint
-}
-
-func (b *Bus) Tick(cycles uint) {
-	b.Cycles += cycles
-	b.PPU.Tick(cycles * 3)
 }
 
 func (b *Bus) CPUMemRead(addr uint16) uint8 {
+	if isCart, data := b.Cart.CPURead(addr); isCart {
+		return data
+	}
 	switch {
-	case addr >= CPURamMirrorsStart && addr <= CPURamMirrorsEnd:
+	case addr <= CPURamMirrorsEnd:
 		return b.CPURam[addr&CPUMaxRam] // 0x07ff
 	case addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd:
 		MirrorsDownAddr := addr & PPUMaxRam
 		switch MirrorsDownAddr {
-		case 0x2000, 0x2001, 0x2003, 0x2005, 0x2006, 0x401:
-			log.Fatalf("try to read from write-only ppu address")
+		case 0x2000, 0x2001, 0x2003, 0x2005, 0x2006, 0x4014:
+			//log.Fatalf("try to read from write-only ppu address")
+			return 0
 		case 0x2002:
 			return b.PPU.ReadStatus()
 		case 0x2004:
@@ -88,6 +85,9 @@ func (b *Bus) CPUMemRead(addr uint16) uint8 {
 }
 
 func (b *Bus) CPUMemWrite(addr uint16, value uint8) {
+	if isCart := b.Cart.CPUWrite(addr, value); isCart {
+		return
+	}
 	switch {
 	case addr <= CPURamMirrorsEnd:
 		b.CPURam[addr&CPUMaxRam] = value
@@ -99,7 +99,7 @@ func (b *Bus) CPUMemWrite(addr uint16, value uint8) {
 		case 0x2001:
 			b.PPU.WriteToMask(value)
 		case 0x2002:
-			log.Fatalf("try to write to ppu status register")
+			panic("try to write to ppu status register")
 		case 0x2003:
 			b.PPU.WriteToOAMAddr(value)
 		case 0x2004:
@@ -111,7 +111,6 @@ func (b *Bus) CPUMemWrite(addr uint16, value uint8) {
 		case 0x2007:
 			b.PPU.WriteToData(value)
 		}
-		//
 	case addr >= 0x8000:
 		panic("Attempt to write to Cartridge ROM space")
 	default:
@@ -123,17 +122,17 @@ func (b *Bus) ReadPRGRom(addr uint16) uint8 {
 	addr -= 0x8000
 	// 0x8000-0x10000 PRG Rom Size might be 16 KiB or 32 KiB. Because [0x8000 … 0x10000] mapped region is 32 KiB of
 	//addressable space, the upper 16 KiB needs to be mapped to the lower 16 KiB (if a game has only 16 KiB of PRG ROM)
-	if len(b.Rom.PRGRom) == 0x4000 && addr >= 0x4000 {
+	if len(b.Cart.PRGRom) == 0x4000 && addr >= 0x4000 {
 		addr = addr % 0x4000
 	}
-	return b.Rom.PRGRom[uint(addr)]
+	return b.Cart.PRGRom[uint(addr)]
 }
 
-func New(rom *cartridge.Rom) *Bus {
-	p := ppu.New(rom.CHRRom, rom.ScreenMirroring)
+func New(cart *cartridge.Cartridge, ppu *ppu.PPU) *Bus {
+
 	return &Bus{
 		CPURam: [2048]uint8{},
-		Rom:    rom,
-		PPU:    p,
+		Cart:   cart,
+		PPU:    ppu,
 	}
 }
