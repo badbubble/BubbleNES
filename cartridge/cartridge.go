@@ -1,6 +1,7 @@
 package cartridge
 
 import (
+	"Nes/mapper"
 	"log"
 )
 
@@ -23,17 +24,54 @@ const (
 	FourScreen MirroringType = "FOUR_SCREEN"
 )
 
-type Rom struct {
+type Cartridge struct {
 	// for code, connected to cpu
 	PRGRom []uint8
 	// for visual graphic, connect to ppu
 	CHRRom []uint8
 	// provide access to extended rom memory for both prg and chr
-	Mapper          uint8
+	MapperID        uint8
 	ScreenMirroring MirroringType
+	Mapper          mapper.Mapper
 }
 
-func New(raw []uint8) *Rom {
+func (c *Cartridge) CPURead(addr uint16) (bool, uint8) {
+	if isMapped, mappedAddr := c.Mapper.CPUMapRead(addr); isMapped {
+		data := c.PRGRom[mappedAddr]
+		return true, data
+	} else {
+		return false, 0x0000
+	}
+}
+
+func (c *Cartridge) CPUWrite(addr uint16, data uint8) bool {
+	if isMapped, mappedAddr := c.Mapper.CPUMapWrite(addr); isMapped {
+		c.PRGRom[mappedAddr] = data
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Cartridge) PPURead(addr uint16) (bool, uint8) {
+	if isMapped, mappedAddr := c.Mapper.PPUMapRead(addr); isMapped {
+		data := c.CHRRom[mappedAddr]
+		return true, data
+	} else {
+		return false, 0x0000
+	}
+
+}
+func (c *Cartridge) PPUWrite(addr uint16, data uint8) bool {
+	if isMapped, mappedAddr := c.Mapper.PPUMapWrite(addr); isMapped {
+		c.CHRRom[mappedAddr] = data
+		return true
+	} else {
+		return false
+	}
+}
+
+func New(raw []uint8) *Cartridge {
 	for idx, b := range raw[0:4] {
 		if b != NesFileHeader[idx] {
 			log.Fatalf("File is not a iNES file format")
@@ -58,7 +96,7 @@ func New(raw []uint8) *Rom {
 	SecondControlByte := raw[7]
 
 	// get mapper value
-	mapper := (SecondControlByte & 0b1111_0000) | (firstControlByte >> 4)
+	mapperID := (SecondControlByte & 0b1111_0000) | (firstControlByte >> 4)
 	if version := SecondControlByte >> 2 & 0b11; version != 0 {
 		log.Fatalf("iNES2.0 is not support")
 	}
@@ -77,6 +115,15 @@ func New(raw []uint8) *Rom {
 	prgRomSize := uint(raw[4]) * PRGRomPageSize
 	chrRomSize := uint(raw[5]) * CHRRomPageSize
 
+	var pMapper mapper.Mapper
+	switch mapperID {
+	case 0:
+		pMapper = &mapper.Mapper000{
+			NumPRGBanks: raw[4],
+			NumCHRBanks: raw[5],
+		}
+	}
+
 	isTrainer := raw[6]&0b0000_0100 != 0
 	// header has 16bytes
 	prgRomStart := 16
@@ -86,10 +133,11 @@ func New(raw []uint8) *Rom {
 	}
 
 	chrRomStart := uint(prgRomStart) + prgRomSize
-	return &Rom{
+	return &Cartridge{
 		PRGRom:          raw[prgRomStart : uint(prgRomStart)+prgRomSize],
 		CHRRom:          raw[chrRomStart : chrRomStart+chrRomSize],
-		Mapper:          mapper,
+		MapperID:        mapperID,
+		Mapper:          pMapper,
 		ScreenMirroring: screenMirroring,
 	}
 }
