@@ -223,6 +223,7 @@ func (cpu *CPU) ADC(mode AddressMode) {
 // of M, the data(!) therefore we can simply add, exactly the same way we did
 // before.
 func (cpu *CPU) SBC(mode AddressMode) {
+
 	addr := cpu.getOperandAddress(mode)
 	value := ^cpu.read(addr)
 	tmp := uint16(cpu.A) + uint16(value) + uint16(cpu.GetFlag(C))
@@ -577,10 +578,9 @@ func (cpu *CPU) BRK(mode AddressMode) {
 // Its value is automatically modified by push/pull instructions, subroutine calls and returns, interrupts
 // and returns from interrupts.
 
-// TSX Transfer X Register to Stack Pointer
-// Copies the current contents of the stack register into the X register and sets the zero and negative flags
-// as appropriate.
-// Function:    stack pointer = X
+// Instruction: Transfer Stack Pointer to X Register
+// Function:    X = stack pointer
+// Flags Out:   N, Z
 func (cpu *CPU) TSX(mode AddressMode) {
 	cpu.X = cpu.SP
 	cpu.UpdateZeroAndNegativeFlag(cpu.X)
@@ -702,7 +702,11 @@ func (cpu *CPU) RTI(mode AddressMode) {
 func (cpu *CPU) BCC(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(C) == 0x00 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -713,7 +717,11 @@ func (cpu *CPU) BCC(mode AddressMode) {
 func (cpu *CPU) BCS(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(C) == 0x01 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -724,7 +732,10 @@ func (cpu *CPU) BCS(mode AddressMode) {
 func (cpu *CPU) BEQ(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(Z) == 0x01 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -735,7 +746,11 @@ func (cpu *CPU) BEQ(mode AddressMode) {
 func (cpu *CPU) BMI(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(N) == 0x01 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -746,7 +761,11 @@ func (cpu *CPU) BMI(mode AddressMode) {
 func (cpu *CPU) BNE(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(Z) == 0x00 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -757,7 +776,11 @@ func (cpu *CPU) BNE(mode AddressMode) {
 func (cpu *CPU) BPL(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(N) == 0x00 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -766,7 +789,11 @@ func (cpu *CPU) BPL(mode AddressMode) {
 func (cpu *CPU) BVS(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(V) == 0x01 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -777,7 +804,11 @@ func (cpu *CPU) BVS(mode AddressMode) {
 func (cpu *CPU) BVC(mode AddressMode) {
 	jump := int8(cpu.read(cpu.PC))
 	if cpu.GetFlag(V) == 0x00 {
-		cpu.PC += uint16(jump) + 1
+		cpu.Cycle += 1
+
+		addr := cpu.PC + uint16(jump) + 1
+		cpu.PageCross(addr, cpu.PC+1)
+		cpu.PC = addr
 	}
 }
 
@@ -858,10 +889,6 @@ func (cpu *CPU) LDX(mode AddressMode) {
 	cpu.UpdateZeroAndNegativeFlag(cpu.X)
 }
 
-// LDY Load The Y Register
-// Loads a byte of memory into the Y register setting the zero and negative flags as appropriate.
-// Function:    Y = M
-// Flags Out:   N, Z
 func (cpu *CPU) LDY(mode AddressMode) {
 	addr := cpu.getOperandAddress(mode)
 	value := cpu.read(addr)
