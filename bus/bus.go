@@ -3,7 +3,6 @@ package bus
 import (
 	"Nes/cartridge"
 	"Nes/ppu"
-	"fmt"
 )
 
 //  _______________ $10000  _______________
@@ -44,7 +43,7 @@ const (
 	PPURamSize         uint16 = 0x3FFF
 	PPURamMirrorsStart uint16 = 0x2000
 	PPURamMirrorsEnd   uint16 = 0x3FFF
-	PPUMaxRam          uint16 = 0x2007
+	PPUMaxRam          uint16 = 0x0007
 )
 
 type Bus struct {
@@ -55,77 +54,30 @@ type Bus struct {
 	PPU    *ppu.PPU
 }
 
-func (b *Bus) CPUMemRead(addr uint16) uint8 {
+func (b *Bus) CPURead(addr uint16) uint8 {
 	if isCart, data := b.Cart.CPURead(addr); isCart {
 		return data
-	}
-	switch {
-	case addr <= CPURamMirrorsEnd:
-		return b.CPURam[addr&CPUMaxRam] // 0x07ff
-	case addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd:
-		MirrorsDownAddr := addr & PPUMaxRam
-		switch MirrorsDownAddr {
-		case 0x2000, 0x2001, 0x2003, 0x2005, 0x2006, 0x4014:
-			//log.Fatalf("try to read from write-only ppu address")
-			return 0
-		case 0x2002:
-			return b.PPU.ReadStatus()
-		case 0x2004:
-			return b.PPU.ReadOMAData()
-		case 0x2007:
-			return b.PPU.ReadData()
-		}
-	case addr >= 0x8000:
-		return b.ReadPRGRom(addr)
-	default:
-		fmt.Printf("Ignoring mem access at %d\n", addr)
-		return 0
+	} else if addr <= CPURamMirrorsEnd {
+		return b.CPURam[addr&CPUMaxRam]
+	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
+		return b.PPU.CPURead(addr & PPUMaxRam)
 	}
 	return 0
 }
 
-func (b *Bus) CPUMemWrite(addr uint16, value uint8) {
+func (b *Bus) CPUWrite(addr uint16, value uint8) {
 	if isCart := b.Cart.CPUWrite(addr, value); isCart {
 		return
-	}
-	switch {
-	case addr <= CPURamMirrorsEnd:
+	} else if addr <= CPURamMirrorsEnd {
 		b.CPURam[addr&CPUMaxRam] = value
-	case addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd:
-		MirrorsDownAddr := addr & PPUMaxRam
-		switch MirrorsDownAddr {
-		case 0x2000:
-			b.PPU.WriteToController(value)
-		case 0x2001:
-			b.PPU.WriteToMask(value)
-		case 0x2002:
-			panic("try to write to ppu status register")
-		case 0x2003:
-			b.PPU.WriteToOAMAddr(value)
-		case 0x2004:
-			b.PPU.WriteToOAMData(value)
-		case 0x2005:
-			b.PPU.WriteToScroll(value)
-		case 0x2006:
-			b.PPU.WriteToPPUAddr(value)
-		case 0x2007:
-			b.PPU.WriteToData(value)
-		}
-	case addr >= 0x8000:
-		panic("Attempt to write to Cartridge ROM space")
-	default:
-		fmt.Printf("Ignoring mem write-access at %d\n", addr)
+	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
+		b.PPU.CPUWrite(addr&PPUMaxRam, value)
 	}
 }
 
-func (b *Bus) ReadPRGRom(addr uint16) uint8 {
-	addr -= 0x8000
-	// 0x8000-0x10000 PRG Rom Size might be 16 KiB or 32 KiB. Because [0x8000 … 0x10000] mapped region is 32 KiB of
-	//addressable space, the upper 16 KiB needs to be mapped to the lower 16 KiB (if a game has only 16 KiB of PRG ROM)
-	if len(b.Cart.PRGRom) == 0x4000 && addr >= 0x4000 {
-		addr = addr % 0x4000
-	}
-	return b.Cart.PRGRom[uint(addr)]
+func (b *Bus) Reset() {
+	b.PPURam = [PPURamSize]uint8{}
+	b.CPURam = [CPURamSize]uint8{}
 }
 
 func New(cart *cartridge.Cartridge, ppu *ppu.PPU) *Bus {
