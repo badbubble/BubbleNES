@@ -29,35 +29,35 @@ type MaskRegister struct {
 }
 
 func (mr *MaskRegister) IsGreyScale() bool {
-	return mr.Status&GREYSCALE == 1
+	return mr.Status&GREYSCALE != 0
 }
 
 func (mr *MaskRegister) IsShowBGInLeftMost8P() bool {
-	return mr.Status&LEFTMOST_8PXL_BACKGROUND == 1
+	return mr.Status&LEFTMOST_8PXL_BACKGROUND != 0
 }
 
 func (mr *MaskRegister) IsShowSPInLeftMost8P() bool {
-	return mr.Status&LEFTMOST_8PXL_SPRITE == 1
+	return mr.Status&LEFTMOST_8PXL_SPRITE != 0
 }
 
 func (mr *MaskRegister) IsShowBG() bool {
-	return mr.Status&SHOW_BACKGROUND == 1
+	return mr.Status&SHOW_BACKGROUND != 0
 }
 
 func (mr *MaskRegister) IsShowSP() bool {
-	return mr.Status&SHOW_SPRITES == 1
+	return mr.Status&SHOW_SPRITES != 0
 }
 
 func (mr *MaskRegister) IsEmphasiseRed() bool {
-	return mr.Status&EMPHASISE_RED == 1
+	return mr.Status&EMPHASISE_RED != 0
 }
 
 func (mr *MaskRegister) IsEmphasiseGreen() bool {
-	return mr.Status&EMPHASISE_GREEN == 1
+	return mr.Status&EMPHASISE_GREEN != 0
 }
 
 func (mr *MaskRegister) IsEmphasiseBLUE() bool {
-	return mr.Status&EMPHASISE_BLUE == 1
+	return mr.Status&EMPHASISE_BLUE != 0
 }
 
 func (mr *MaskRegister) Update(value uint8) {

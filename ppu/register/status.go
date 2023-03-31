@@ -26,14 +26,14 @@ package register
 //	pre-render line.
 
 const (
-	NOTUSED         uint8 = 0b00000001
-	NOTUSED2        uint8 = 0b00000010
-	NOTUSED3        uint8 = 0b00000100
-	NOTUSED4        uint8 = 0b00001000
-	NOTUSED5        uint8 = 0b00010000
-	SPRITE_OVERFLOW uint8 = 0b00100000
-	SPRITE_ZERO_HIT uint8 = 0b01000000
-	VBLANK_STARTED  uint8 = 0b10000000
+	NOTUSED         uint8 = 0b0000_0001
+	NOTUSED2        uint8 = 0b0000_0010
+	NOTUSED3        uint8 = 0b0000_0100
+	NOTUSED4        uint8 = 0b0000_1000
+	NOTUSED5        uint8 = 0b0001_0000
+	SPRITE_OVERFLOW uint8 = 0b0010_0000
+	SPRITE_ZERO_HIT uint8 = 0b0100_0000
+	VBLANK_STARTED  uint8 = 0b1000_0000
 )
 
 type StatusRegister struct {
@@ -53,7 +53,7 @@ func (sr *StatusRegister) ReSetVBlankStatus() {
 }
 
 func (sr *StatusRegister) IsInVBlank() bool {
-	return sr.Status&VBLANK_STARTED == 1
+	return sr.Status&VBLANK_STARTED != 0
 }
 
 func (sr *StatusRegister) SetSpriteZeroHit(status bool) {
