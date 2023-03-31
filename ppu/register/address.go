@@ -37,7 +37,6 @@ func (ar *AddressRegister) Increment(inc uint8) {
 	if ar.Get() > 0x3FFF {
 		ar.Set(ar.Get() & 0x3FFF)
 	}
-
 }
 
 func (ar *AddressRegister) ResetLatch() {
