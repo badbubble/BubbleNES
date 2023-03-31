@@ -1,8 +1,11 @@
 package cpu
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-func (cpu *CPU) Trace() string {
+func (cpu *CPU) Trace(PC uint16) string {
 	var hexdump []interface{}
 	var memAddr uint16
 	var address uint8
@@ -12,9 +15,9 @@ func (cpu *CPU) Trace() string {
 	var hexStr string
 	var asmStr string
 	var tmpStr string
-	code := cpu.read(cpu.PC)
+	code := cpu.read(PC)
 	ops := cpu.Lookup[code]
-	begin := cpu.PC
+	begin := PC
 	hexdump = append(hexdump, code)
 
 	if ops.Mode == Immediate || ops.Mode == Implied {
@@ -105,5 +108,47 @@ func (cpu *CPU) Trace() string {
 	}
 
 	asmStr = fmt.Sprintf("%04X  %-8s %4s %s", begin, hexStr, ops.Name, tmpStr)
-	return fmt.Sprintf("%-47s A:%02X X:%02X Y:%02X P:%02X SP:%02X", asmStr, cpu.A, cpu.X, cpu.Y, cpu.Status, cpu.SP)
+	var status []string
+
+	if cpu.GetFlag(N) == 1 {
+		status = append(status, "N")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(V) == 1 {
+		status = append(status, "V")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(U) == 1 {
+		status = append(status, "U")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(B) == 1 {
+		status = append(status, "B")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(D) == 1 {
+		status = append(status, "D")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(I) == 1 {
+		status = append(status, "I")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(Z) == 1 {
+		status = append(status, "Z")
+	} else {
+		status = append(status, ".")
+	}
+	if cpu.GetFlag(C) == 1 {
+		status = append(status, "C")
+	} else {
+		status = append(status, ".")
+	}
+	return fmt.Sprintf("%-47s A:%02X X:%02X Y:%02X P:%02X SP:%02X Status:%02s", asmStr, cpu.A, cpu.X, cpu.Y, cpu.Status, cpu.SP, strings.Join(status, ""))
 }
