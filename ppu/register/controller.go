@@ -32,7 +32,15 @@ type ControllerRegister struct {
 	Status uint8
 }
 
-func (cr *ControllerRegister) UpdateController(value uint8) {
+func (c *ControllerRegister) GetNameTableX() uint8 {
+	return c.Status & 0x01
+}
+
+func (c *ControllerRegister) GetNameTableY() uint8 {
+	return c.Status & 0x02
+}
+
+func (cr *ControllerRegister) Update(value uint8) {
 	cr.Status = value
 }
 
@@ -88,7 +96,7 @@ func (cr *ControllerRegister) GetMasterSlaveSelect() uint8 {
 }
 
 func (cr *ControllerRegister) GenerateVBlankNMI() bool {
-	if cr.Status&uint8(V) == 1 {
+	if cr.Status&uint8(V) != 0 {
 		return true
 	} else {
 		return false
