@@ -71,6 +71,12 @@ func (c *Cartridge) PPUWrite(addr uint16, data uint8) bool {
 	}
 }
 
+func (c *Cartridge) Reset() {
+	if c.Mapper != nil {
+		c.Mapper.Reset()
+	}
+}
+
 func New(raw []uint8) *Cartridge {
 	for idx, b := range raw[0:4] {
 		if b != NesFileHeader[idx] {
