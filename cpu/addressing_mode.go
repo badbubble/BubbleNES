@@ -48,7 +48,8 @@ func (cpu *CPU) Accumulator() uint16 {
 // The instruction expects the next byte to be used as a value, so we'll prep
 // the read address to point to the next byte
 func (cpu *CPU) Immediate() uint16 {
-	return cpu.PC
+	addr := cpu.PC
+	return addr
 }
 
 // ZeroPage
@@ -65,7 +66,8 @@ func (cpu *CPU) Immediate() uint16 {
 //	LDA $00         ;Load accumulator from $00
 //	ASL ANSWER      ;Shift labelled location ANSWER left
 func (cpu *CPU) ZeroPage() uint16 {
-	return uint16(cpu.read(cpu.PC))
+	data := uint16(cpu.read(cpu.PC))
+	return data
 }
 
 // ZeroPageX Zero Page with X Offset
@@ -113,12 +115,10 @@ func (cpu *CPU) ZeroPageY() uint16 {
 //	BNE *+4         ;Skip over the following 2 byte instruction
 func (cpu *CPU) Relative() uint16 {
 	offset := uint16(cpu.read(cpu.PC))
-
-	if offset < 0x80 {
-		return cpu.PC + 1 + offset
-	} else {
-		return cpu.PC + 1 - (offset | 0b0111_1111)
+	if offset&0x80 != 0 {
+		return offset | 0xFF00
 	}
+	return offset
 }
 
 // Absolute
@@ -128,7 +128,8 @@ func (cpu *CPU) Relative() uint16 {
 // JMP $1234       ;Jump to location $1234
 // JSR WIBBLE      ;Call subroutine WIBBLE
 func (cpu *CPU) Absolute() uint16 {
-	return cpu.readU16(cpu.PC)
+	data := cpu.readU16(cpu.PC)
+	return data
 }
 
 // AbsoluteX with X Offset
@@ -142,7 +143,7 @@ func (cpu *CPU) Absolute() uint16 {
 // ROR CRC,X       ;Rotate right one bit
 func (cpu *CPU) AbsoluteX() uint16 {
 	source := cpu.readU16(cpu.PC)
-	result := uint16(cpu.X)
+	result := source + uint16(cpu.X)
 	cpu.PageCross(source, result)
 	return result & 0xFFFF
 }
@@ -157,7 +158,7 @@ func (cpu *CPU) AbsoluteX() uint16 {
 // STA MEM,Y       ;Store accumulator in memory
 func (cpu *CPU) AbsoluteY() uint16 {
 	source := cpu.readU16(cpu.PC)
-	result := uint16(cpu.Y)
+	result := source + uint16(cpu.Y)
 	cpu.PageCross(source, result)
 	return result & 0xFFFF
 }
@@ -212,7 +213,6 @@ func (cpu *CPU) IndirectX() uint16 {
 // STA (DST),Y     ;Store accumulator indirectly into memory
 func (cpu *CPU) IndirectY() uint16 {
 	baseAddr := uint16(cpu.read(cpu.PC))
-
 	lo := uint16(cpu.read(baseAddr))
 	hi := uint16(cpu.read((baseAddr + 1) & 0x00FF))
 	source := (hi << 8) | lo
