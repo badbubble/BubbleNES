@@ -9,7 +9,6 @@ func (cpu *CPU) NMI() {
 	cpu.Status = flag
 
 	cpu.SetFlag(I, true)
-	cpu.Bus.Tick(2)
-	cpu.PC = 0xFFFA
-
+	cpu.PC = cpu.readU16(0xFFFA)
+	cpu.Cycle = 8
 }
