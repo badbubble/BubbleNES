@@ -5,4 +5,5 @@ type Mapper interface {
 	PPUMapWrite(addr uint16) (bool, uint16)
 	CPUMapRead(addr uint16) (bool, uint16)
 	CPUMapWrite(addr uint16) (bool, uint16)
+	Reset()
 }

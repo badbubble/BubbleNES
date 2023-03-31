@@ -50,3 +50,7 @@ func (m *Mapper000) PPUMapWrite(addr uint16) (bool, uint16) {
 	}
 	return false, mappedAddr
 }
+
+func (m *Mapper000) Reset() {
+
+}
