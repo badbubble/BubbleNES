@@ -38,8 +38,8 @@ func (nes *Nes) Reset() {
 	nes.SystemCycles = 0
 }
 
-func New() *Nes {
-	data, err := os.ReadFile("/Users/badbubble/GolandProjects/Nes/test/dk.nes")
+func New(gamePath string) *Nes {
+	data, err := os.ReadFile(gamePath)
 	if err != nil {
 		log.Fatal(err)
 	}
