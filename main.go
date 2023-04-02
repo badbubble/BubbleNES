@@ -1,22 +1,17 @@
 package main
 
 import (
-	"Nes/bus"
-	"Nes/cartridge"
-	"Nes/cpu"
-	"log"
+	"Nes/game"
+	"fmt"
 	"os"
 )
 
 func main() {
-	data, err := os.ReadFile("/Users/badbubble/GolandProjects/Nes/test/nestest.nes")
-	if err != nil {
-		log.Fatal(err)
+	if len(os.Args) != 2 {
+		fmt.Println("need .nes file path.")
+		fmt.Println("./BubbleNes /path/to/nes/file")
 	}
-	r := cartridge.New([]uint8(data))
-	b := bus.New(r)
-	c := cpu.New(b)
-	c.Reset()
-	c.PC = 0xC000
-	c.Run()
+
+	g := game.New(os.Args[1])
+	g.Run()
 }
