@@ -2,9 +2,13 @@ package game
 
 import (
 	"Nes/nes"
+	"bufio"
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
+	"image"
+	"image/jpeg"
+	"os"
 	"unsafe"
 )
 
@@ -73,19 +77,34 @@ func (g *Game) Run() {
 
 	}
 }
+func saveImage(img image.Image, filename string) error {
+	outFile, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	b := bufio.NewWriter(outFile)
+	err = jpeg.Encode(b, img, nil)
+	if err != nil {
+		return err
+	}
+	err = b.Flush()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 func (g *Game) UpdateFrame() {
 	img := g.Nes.PPU.Frame
+	//saveImage(g.Nes.PPU.Frame, "123.jpeg")
 	surface, err := sdl.CreateRGBSurfaceFrom(
 		unsafe.Pointer(&img.Pix[0]),
 		int32(img.Bounds().Dx()),
 		int32(img.Bounds().Dy()),
 		32,
 		img.Stride,
-		0,
-		0,
-		0,
-		0,
+		0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000,
 	)
 	if err != nil {
 		panic(err)
@@ -153,12 +172,12 @@ func (g *Game) DrawPatternTable() {
 	g.Nes.PPU.GetPatternTable(0, 0)
 	g.Nes.PPU.GetPatternTable(1, 0)
 	// Create a new surface and fill it with random black and white pixels
-	PatternTbl1Surf, _ := sdl.CreateRGBSurfaceFrom(unsafe.Pointer(&g.Nes.PPU.PatternTableImage[0].Pix[0]), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dx()), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dy()), 32, g.Nes.PPU.PatternTableImage[0].Stride, 0, 0, 0, 0)
+	PatternTbl1Surf, _ := sdl.CreateRGBSurfaceFrom(unsafe.Pointer(&g.Nes.PPU.PatternTableImage[0].Pix[0]), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dx()), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dy()), 32, g.Nes.PPU.PatternTableImage[0].Stride, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000)
 	defer PatternTbl1Surf.Free()
 	// Create a new texture from the surface
 	PatternTbl1Frame, _ := g.Renderer.CreateTextureFromSurface(PatternTbl1Surf)
 	defer PatternTbl1Frame.Destroy()
-	PatternTbl2Surf, _ := sdl.CreateRGBSurfaceFrom(unsafe.Pointer(&g.Nes.PPU.PatternTableImage[1].Pix[0]), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dx()), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dy()), 32, g.Nes.PPU.PatternTableImage[0].Stride, 0, 0, 0, 0)
+	PatternTbl2Surf, _ := sdl.CreateRGBSurfaceFrom(unsafe.Pointer(&g.Nes.PPU.PatternTableImage[1].Pix[0]), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dx()), int32(g.Nes.PPU.PatternTableImage[0].Bounds().Dy()), 32, g.Nes.PPU.PatternTableImage[0].Stride, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000)
 	defer PatternTbl2Surf.Free()
 	// Create a new texture from the surface
 	PatternTbl2Frame, _ := g.Renderer.CreateTextureFromSurface(PatternTbl2Surf)
