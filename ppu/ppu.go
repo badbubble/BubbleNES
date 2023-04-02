@@ -246,7 +246,9 @@ func (p *PPU) Clock() {
 		}
 		bgPalette = (p1Pal << 1) | p0Pal
 	}
-	p.Frame.Set(p.Cycles-1, p.Scanline, p.GetColorFromPalette(int(bgPalette), bgPixel))
+	p.Frame.SetRGBA(p.Cycles-1,
+		p.Scanline,
+		SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F])
 	//fmt.Printf("Scanline:%d Cycles:%d NTID:%d NTAID:%d\n", p.Scanline, p.Cycles, p.BGNextTileId, p.BGNextTileAttrib)
 	p.Cycles += 1
 
@@ -361,9 +363,11 @@ func (p *PPU) GetPatternTable(i, palette int) {
 					pixel := tileMSB&0x01 + tileLSB&0x01
 					tileMSB >>= 1
 					tileLSB >>= 1
-
-					p.PatternTableImage[i].Set(nTileX*8+(7-col), nTileY*8+row, p.GetColorFromPalette(palette, pixel))
-					//fmt.Printf("x:%d y:%d offset:%d msb:%X lsb:%X palette:%d pixel:%d r:%X g:%X b:%X address:%X Resp:%X\n", nTileX*8+(7-col), nTileY*8+row, nOffset, tileMSB, tileLSB, palette, pixel,
+					p.PatternTableImage[i].SetRGBA(nTileX*8+(7-col),
+						nTileY*8+row,
+						SystemPalette[p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F],
+					)
+					// fmt.Printf("x:%d y:%d offset:%d msb:%X lsb:%X palette:%d pixel:%d r:%X g:%X b:%X address:%X Resp:%X\n", nTileX*8+(7-col), nTileY*8+row, nOffset, tileMSB, tileLSB, palette, pixel,
 					//	p.GetColorFromPalette(palette, pixel).R, p.GetColorFromPalette(palette, pixel).G, p.GetColorFromPalette(palette, pixel).B, 0x3F00+(uint16(palette)<<2)+uint16(pixel), p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F)
 
 				}
@@ -372,9 +376,9 @@ func (p *PPU) GetPatternTable(i, palette int) {
 	}
 }
 
-func (p *PPU) GetColorFromPalette(palette int, pixel uint8) color.RGBA {
-	return SystemPalette[p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F]
-}
+//func (p *PPU) GetColorFromPalette(palette int, pixel uint8) *color.RGBA {
+//	return SystemPalette[p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F]
+//}
 
 // PPURead PPU read its own address map
 func (p *PPU) PPURead(addr uint16) uint8 {
@@ -599,8 +603,34 @@ func (p *PPU) CPUWrite(addr uint16, data uint8) {
 	}
 }
 
-func (p *PPU) CPURead(addr uint16) uint8 {
+func (p *PPU) CPURead(addr uint16, isTrace bool) uint8 {
 	var data uint8
+	if isTrace {
+		switch addr {
+		case 0x0000: // Control
+			data = p.Controller.Status
+			break
+		case 0x0001: // Mask
+			data = p.Mask.Status
+			break
+		case 0x0002: // Status
+			data = p.Status.Status&0xE0 | p.InternalDataBuffer&0x1F
+			break
+		case 0x0003: // OAM Address
+			break
+		case 0x0004: // OAM Data
+			break
+		case 0x0005: // Scroll
+			break
+		case 0x0006: // PPu Address
+			break
+		case 0x0007: // PPU Data
+			data = p.InternalDataBuffer
+
+		}
+
+		return data
+	}
 	switch addr {
 	case 0x0000: // Control
 		data = p.Controller.Status
@@ -628,7 +658,9 @@ func (p *PPU) CPURead(addr uint16) uint8 {
 		}
 
 		p.VRamAddr.Data += uint16(p.Controller.VRAMAddressIncrement())
+
 	}
+
 	return data
 }
 
