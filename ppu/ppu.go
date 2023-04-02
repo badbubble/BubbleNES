@@ -3,6 +3,7 @@ package ppu
 import (
 	"Nes/cartridge"
 	"Nes/ppu/register"
+	"fmt"
 	"image"
 	"image/color"
 )
@@ -121,6 +122,8 @@ type PPU struct {
 	BGShifterPatternHigh   uint16
 	BGShifterAttributeLow  uint16
 	BGShifterAttributeHigh uint16
+
+	Debug bool
 }
 
 func (p *PPU) Clock() {
@@ -157,7 +160,7 @@ func (p *PPU) Clock() {
 				p.BGNextTileAttrib = p.PPURead(0x23C0 | (uint16(p.VRamAddr.GetNameTableY()) << 11) |
 					uint16(p.VRamAddr.GetNameTableX())<<10 |
 					(uint16(p.VRamAddr.GetCoarseY())>>2)<<3 |
-					uint16(p.VRamAddr.GetCoarseY())>>2)
+					uint16(p.VRamAddr.GetCoarseX())>>2)
 				if p.VRamAddr.GetCoarseY()&0x02 != 0 {
 					p.BGNextTileAttrib >>= 4
 				}
@@ -248,8 +251,14 @@ func (p *PPU) Clock() {
 	}
 	p.Frame.SetRGBA(p.Cycles-1,
 		p.Scanline,
-		SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F])
-	//fmt.Printf("Scanline:%d Cycles:%d NTID:%d NTAID:%d\n", p.Scanline, p.Cycles, p.BGNextTileId, p.BGNextTileAttrib)
+		SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))])
+	if p.Debug {
+		fmt.Printf("Scanline:%d Cycles:%d NTID:%d NTAID:%d R:%X G:%X B:%X\n", p.Scanline, p.Cycles, p.BGNextTileId, p.BGNextTileAttrib,
+			SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F].R,
+			SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F].G,
+			SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F].B)
+	}
+
 	p.Cycles += 1
 
 	if p.Cycles >= 341 {
@@ -365,7 +374,7 @@ func (p *PPU) GetPatternTable(i, palette int) {
 					tileLSB >>= 1
 					p.PatternTableImage[i].SetRGBA(nTileX*8+(7-col),
 						nTileY*8+row,
-						SystemPalette[p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F],
+						SystemPalette[p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))],
 					)
 					// fmt.Printf("x:%d y:%d offset:%d msb:%X lsb:%X palette:%d pixel:%d r:%X g:%X b:%X address:%X Resp:%X\n", nTileX*8+(7-col), nTileY*8+row, nOffset, tileMSB, tileLSB, palette, pixel,
 					//	p.GetColorFromPalette(palette, pixel).R, p.GetColorFromPalette(palette, pixel).G, p.GetColorFromPalette(palette, pixel).B, 0x3F00+(uint16(palette)<<2)+uint16(pixel), p.PPURead(0x3F00+(uint16(palette)<<2)+uint16(pixel))&0x3F)
@@ -468,7 +477,7 @@ func (p *PPU) PPURead(addr uint16) uint8 {
 		if addr == 0x001C {
 			addr = 0x000C
 		}
-		return p.PaletteTable[addr] & 0x3F
+		return p.PaletteTable[addr]
 	}
 	return 0x0000
 }
