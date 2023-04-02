@@ -54,13 +54,13 @@ type Bus struct {
 	PPU    *ppu.PPU
 }
 
-func (b *Bus) CPURead(addr uint16) uint8 {
+func (b *Bus) CPURead(addr uint16, isTrace bool) uint8 {
 	if isCart, data := b.Cart.CPURead(addr); isCart {
 		return data
 	} else if addr <= CPURamMirrorsEnd {
 		return b.CPURam[addr&CPUMaxRam]
 	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
-		return b.PPU.CPURead(addr & PPUMaxRam)
+		return b.PPU.CPURead(addr&PPUMaxRam, isTrace)
 	}
 	return 0
 }
