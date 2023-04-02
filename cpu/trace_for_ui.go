@@ -12,7 +12,7 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 	var hexStr string
 	// var asmStr string
 	var tmpStr string
-	code := cpu.read(mem)
+	code := cpu.ReadTrace(mem)
 	ops := cpu.Lookup[code]
 	begin := mem
 	hexdump = append(hexdump, code)
@@ -22,7 +22,7 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 		value = 0
 	} else {
 		memAddr = cpu.getAbsoluteAddress(ops.Mode, begin+1)
-		value = cpu.read(memAddr)
+		value = cpu.ReadTrace(memAddr)
 	}
 
 	if ops.Length == 1 {
@@ -32,7 +32,7 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 			tmpStr = ""
 		}
 	} else if ops.Length == 2 {
-		address = cpu.read(begin + 1)
+		address = cpu.ReadTrace(begin + 1)
 		hexdump = append(hexdump, address)
 
 		switch ops.Mode {
@@ -56,12 +56,12 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 			panic(fmt.Sprintf("unexpected mode %s for ops has two bytes", ops.Mode))
 		}
 	} else if ops.Length == 3 {
-		lo := cpu.read(begin + 1)
-		hi := cpu.read(begin + 2)
+		lo := cpu.ReadTrace(begin + 1)
+		hi := cpu.ReadTrace(begin + 2)
 		hexdump = append(hexdump, lo)
 		hexdump = append(hexdump, hi)
 
-		addressU16 = cpu.readU16(begin + 1)
+		addressU16 = cpu.ReadU16Trace(begin + 1)
 
 		switch ops.Mode {
 		case Implied, Accumulator:
@@ -82,11 +82,11 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 		case Indirect:
 			if code == 0x6c {
 				if addressU16&0x00FF == 0x00FF {
-					lo := cpu.read(addressU16)
-					hi := cpu.read(addressU16 & 0xFF00)
+					lo := cpu.ReadTrace(addressU16)
+					hi := cpu.ReadTrace(addressU16 & 0xFF00)
 					jumAddr = uint16(hi)<<8 | uint16(lo)
 				} else {
-					jumAddr = cpu.readU16(addressU16)
+					jumAddr = cpu.ReadU16Trace(addressU16)
 				}
 				tmpStr = fmt.Sprintf("($%04X) = %04X", addressU16, jumAddr)
 			}
@@ -104,6 +104,7 @@ func (cpu *CPU) TraceForUI(mem uint16) string {
 		hexStr += fmt.Sprintf("%02X", hex)
 	}
 
-	return fmt.Sprintf("%04X  %-4s %4s %s", begin, hexStr, ops.Name, tmpStr)
+	return fmt.Sprintf("%04X  %-8s %4s %s", begin, hexStr, ops.Name, tmpStr)
+
 	// return fmt.Sprintf("%-47s A:%02X X:%02X Y:%02X P:%02X SP:%02X", asmStr, cpu.A, cpu.X, cpu.Y, cpu.Status, cpu.SP)
 }
