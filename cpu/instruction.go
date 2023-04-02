@@ -606,6 +606,8 @@ func (cpu *CPU) PHA(mode AddressMode) {
 // Note:        Break flag is set to 1 before push and Unused
 func (cpu *CPU) PHP(mode AddressMode) {
 	cpu.StackPush(uint8(cpu.Status) | uint8(B) | uint8(U))
+	cpu.SetFlag(B, false)
+	cpu.SetFlag(U, false)
 }
 
 // PLA Pull Accumulator off Stack
@@ -624,7 +626,7 @@ func (cpu *CPU) PLA(mode AddressMode) {
 func (cpu *CPU) PLP(mode AddressMode) {
 	cpu.Status = StatusFlag(cpu.StackPop())
 	cpu.SetFlag(U, true)
-	cpu.SetFlag(B, false)
+	//cpu.SetFlag(B, false)
 }
 
 /* Jumps & Calls */
@@ -1066,4 +1068,344 @@ func (cpu *CPU) SAX(mode AddressMode) {
 	value := cpu.A & cpu.X
 	addr := cpu.getOperandAddress(mode)
 	cpu.write(addr, value)
+}
+
+func (cpu *CPU) addInstructions() {
+	cpu.Lookup[0x00] = NewInstruction(BRK, 1, 7, Implied)
+	cpu.Lookup[0xea] = NewInstruction(NOP, 1, 2, Implied)
+
+	/* Arithmetic */
+	// ADC
+	cpu.Lookup[0x69] = NewInstruction(ADC, 2, 2, Immediate)
+	cpu.Lookup[0x65] = NewInstruction(ADC, 2, 3, ZeroPage)
+	cpu.Lookup[0x75] = NewInstruction(ADC, 2, 4, ZeroPageX)
+	cpu.Lookup[0x6d] = NewInstruction(ADC, 3, 4, Absolute)
+	cpu.Lookup[0x7d] = NewInstruction(ADC, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0x79] = NewInstruction(ADC, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0x61] = NewInstruction(ADC, 2, 6, IndirectX)
+	cpu.Lookup[0x71] = NewInstruction(ADC, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	// SBC
+	cpu.Lookup[0xe9] = NewInstruction(SBC, 2, 2, Immediate)
+	cpu.Lookup[0xe5] = NewInstruction(SBC, 2, 3, ZeroPage)
+	cpu.Lookup[0xf5] = NewInstruction(SBC, 2, 4, ZeroPageX)
+	cpu.Lookup[0xed] = NewInstruction(SBC, 3, 4, Absolute)
+	cpu.Lookup[0xfd] = NewInstruction(SBC, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0xf9] = NewInstruction(SBC, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0xe1] = NewInstruction(SBC, 2, 6, IndirectX)
+	cpu.Lookup[0xf1] = NewInstruction(SBC, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	// AND
+	cpu.Lookup[0x29] = NewInstruction(AND, 2, 2, Immediate)
+	cpu.Lookup[0x25] = NewInstruction(AND, 2, 3, ZeroPage)
+	cpu.Lookup[0x35] = NewInstruction(AND, 2, 4, ZeroPageX)
+	cpu.Lookup[0x2d] = NewInstruction(AND, 3, 4, Absolute)
+	cpu.Lookup[0x3d] = NewInstruction(AND, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0x39] = NewInstruction(AND, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0x21] = NewInstruction(AND, 2, 6, IndirectX)
+	cpu.Lookup[0x31] = NewInstruction(AND, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	//EOR
+	cpu.Lookup[0x49] = NewInstruction(EOR, 2, 2, Immediate)
+	cpu.Lookup[0x45] = NewInstruction(EOR, 2, 3, ZeroPage)
+	cpu.Lookup[0x55] = NewInstruction(EOR, 2, 4, ZeroPageX)
+	cpu.Lookup[0x4d] = NewInstruction(EOR, 3, 4, Absolute)
+	cpu.Lookup[0x5d] = NewInstruction(EOR, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0x59] = NewInstruction(EOR, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0x41] = NewInstruction(EOR, 2, 6, IndirectX)
+	cpu.Lookup[0x51] = NewInstruction(EOR, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	//ORA
+	cpu.Lookup[0x09] = NewInstruction(ORA, 2, 2, Immediate)
+	cpu.Lookup[0x05] = NewInstruction(ORA, 2, 3, ZeroPage)
+	cpu.Lookup[0x15] = NewInstruction(ORA, 2, 4, ZeroPageX)
+	cpu.Lookup[0x0d] = NewInstruction(ORA, 3, 4, Absolute)
+	cpu.Lookup[0x1d] = NewInstruction(ORA, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0x19] = NewInstruction(ORA, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0x01] = NewInstruction(ORA, 2, 6, IndirectX)
+	cpu.Lookup[0x11] = NewInstruction(ORA, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	/* Shifts */
+	// ASL
+	cpu.Lookup[0x0a] = NewInstruction(ASL, 1, 2, Accumulator)
+	cpu.Lookup[0x06] = NewInstruction(ASL, 2, 5, ZeroPage)
+	cpu.Lookup[0x16] = NewInstruction(ASL, 2, 6, ZeroPageX)
+	cpu.Lookup[0x0e] = NewInstruction(ASL, 3, 6, Absolute)
+	cpu.Lookup[0x1e] = NewInstruction(ASL, 3, 7, AbsoluteX)
+
+	// LSR
+	cpu.Lookup[0x4a] = NewInstruction(LSR, 1, 2, Accumulator)
+	cpu.Lookup[0x46] = NewInstruction(LSR, 2, 5, ZeroPage)
+	cpu.Lookup[0x56] = NewInstruction(LSR, 2, 6, ZeroPageX)
+	cpu.Lookup[0x4e] = NewInstruction(LSR, 3, 6, Absolute)
+	cpu.Lookup[0x5e] = NewInstruction(LSR, 3, 7, AbsoluteX)
+
+	// ROL
+	cpu.Lookup[0x2a] = NewInstruction(ROL, 1, 2, Accumulator)
+	cpu.Lookup[0x26] = NewInstruction(ROL, 2, 5, ZeroPage)
+	cpu.Lookup[0x36] = NewInstruction(ROL, 2, 6, ZeroPageX)
+	cpu.Lookup[0x2e] = NewInstruction(ROL, 3, 6, Absolute)
+	cpu.Lookup[0x3e] = NewInstruction(ROL, 3, 7, AbsoluteX)
+
+	// ROR
+	cpu.Lookup[0x6a] = NewInstruction(ROR, 1, 2, Accumulator)
+	cpu.Lookup[0x66] = NewInstruction(ROR, 2, 5, ZeroPage)
+	cpu.Lookup[0x76] = NewInstruction(ROR, 2, 6, ZeroPageX)
+	cpu.Lookup[0x6e] = NewInstruction(ROR, 3, 6, Absolute)
+	cpu.Lookup[0x7e] = NewInstruction(ROR, 3, 7, AbsoluteX)
+
+	// INC
+	cpu.Lookup[0xe6] = NewInstruction(INC, 2, 5, ZeroPage)
+	cpu.Lookup[0xf6] = NewInstruction(INC, 2, 6, ZeroPageX)
+	cpu.Lookup[0xee] = NewInstruction(INC, 3, 6, Absolute)
+	cpu.Lookup[0xfe] = NewInstruction(INC, 3, 7, AbsoluteX)
+
+	// DEC
+	cpu.Lookup[0xc6] = NewInstruction(DEC, 2, 5, ZeroPage)
+	cpu.Lookup[0xd6] = NewInstruction(DEC, 2, 6, ZeroPageX)
+	cpu.Lookup[0xce] = NewInstruction(DEC, 3, 6, Absolute)
+	cpu.Lookup[0xde] = NewInstruction(DEC, 3, 7, AbsoluteX)
+
+	// INX
+	cpu.Lookup[0xe8] = NewInstruction(INX, 1, 2, Implied)
+	// DEX
+	cpu.Lookup[0xca] = NewInstruction(DEX, 1, 2, Implied)
+	// INY
+	cpu.Lookup[0xc8] = NewInstruction(INY, 1, 2, Implied)
+	// DEY
+	cpu.Lookup[0x88] = NewInstruction(DEY, 1, 2, Implied)
+
+	//CMP
+	cpu.Lookup[0xc9] = NewInstruction(CMP, 2, 2, Immediate)
+	cpu.Lookup[0xc5] = NewInstruction(CMP, 2, 3, ZeroPage)
+	cpu.Lookup[0xd5] = NewInstruction(CMP, 2, 4, ZeroPageX)
+	cpu.Lookup[0xcd] = NewInstruction(CMP, 3, 4, Absolute)
+	cpu.Lookup[0xdd] = NewInstruction(CMP, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0xd9] = NewInstruction(CMP, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0xc1] = NewInstruction(CMP, 2, 6, IndirectX)
+	cpu.Lookup[0xd1] = NewInstruction(CMP, 2, 5 /*+1 if page crossed*/, IndirectY)
+	// CPY
+	cpu.Lookup[0xc0] = NewInstruction(CPY, 2, 2, Immediate)
+	cpu.Lookup[0xc4] = NewInstruction(CPY, 2, 3, ZeroPage)
+	cpu.Lookup[0xcc] = NewInstruction(CPY, 3, 4, Absolute)
+	// CPX
+	cpu.Lookup[0xe0] = NewInstruction(CPX, 2, 2, Immediate)
+	cpu.Lookup[0xe4] = NewInstruction(CPX, 2, 3, ZeroPage)
+	cpu.Lookup[0xec] = NewInstruction(CPX, 3, 4, Absolute)
+	/* Branching */
+
+	// JMP
+	cpu.Lookup[0x4c] = NewInstruction(JMP, 3, 3, Absolute) // Absolute AddressingMode that acts as Immidiate
+	cpu.Lookup[0x6c] = NewInstruction(JMP, 3, 5, Indirect) // Indirect AddressingMode:Indirect with 6502 bug
+
+	//JSR
+	cpu.Lookup[0x20] = NewInstruction(JSR, 3, 6, Absolute)
+
+	// RTS
+	cpu.Lookup[0x60] = NewInstruction(RTS, 1, 6, Implied)
+	// RTI
+	cpu.Lookup[0x40] = NewInstruction(RTI, 1, 6, Implied)
+	// BNE
+	cpu.Lookup[0xd0] = NewInstruction(BNE, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BVS
+	cpu.Lookup[0x70] = NewInstruction(BVS, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BVC
+	cpu.Lookup[0x50] = NewInstruction(BVC, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BMI
+	cpu.Lookup[0x30] = NewInstruction(BMI, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BEQ
+	cpu.Lookup[0xf0] = NewInstruction(BEQ, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BCS
+	cpu.Lookup[0xb0] = NewInstruction(BCS, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BCC
+	cpu.Lookup[0x90] = NewInstruction(BCC, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BPL
+	cpu.Lookup[0x10] = NewInstruction(BPL, 2, 2 /*(+1 if branch succeeds +2 if to a new page)*/, Relative)
+	// BIT
+	cpu.Lookup[0x24] = NewInstruction(BIT, 2, 3, ZeroPage)
+	cpu.Lookup[0x2c] = NewInstruction(BIT, 3, 4, Absolute)
+	/* Stores, Loads */
+	// LDA
+	cpu.Lookup[0xa9] = NewInstruction(LDA, 2, 2, Immediate)
+	cpu.Lookup[0xa5] = NewInstruction(LDA, 2, 3, ZeroPage)
+	cpu.Lookup[0xb5] = NewInstruction(LDA, 2, 4, ZeroPageX)
+	cpu.Lookup[0xad] = NewInstruction(LDA, 3, 4, Absolute)
+	cpu.Lookup[0xbd] = NewInstruction(LDA, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	cpu.Lookup[0xb9] = NewInstruction(LDA, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+	cpu.Lookup[0xa1] = NewInstruction(LDA, 2, 6, IndirectX)
+	cpu.Lookup[0xb1] = NewInstruction(LDA, 2, 5 /*+1 if page crossed*/, IndirectY)
+
+	// LDX
+	cpu.Lookup[0xa2] = NewInstruction(LDX, 2, 2, Immediate)
+	cpu.Lookup[0xa6] = NewInstruction(LDX, 2, 3, ZeroPage)
+	cpu.Lookup[0xb6] = NewInstruction(LDX, 2, 4, ZeroPageY)
+	cpu.Lookup[0xae] = NewInstruction(LDX, 3, 4, Absolute)
+	cpu.Lookup[0xbe] = NewInstruction(LDX, 3, 4 /*+1 if page crossed*/, AbsoluteY)
+
+	// LDY
+	cpu.Lookup[0xa0] = NewInstruction(LDY, 2, 2, Immediate)
+	cpu.Lookup[0xa4] = NewInstruction(LDY, 2, 3, ZeroPage)
+	cpu.Lookup[0xb4] = NewInstruction(LDY, 2, 4, ZeroPageX)
+	cpu.Lookup[0xac] = NewInstruction(LDY, 3, 4, Absolute)
+	cpu.Lookup[0xbc] = NewInstruction(LDY, 3, 4 /*+1 if page crossed*/, AbsoluteX)
+	// STA
+	cpu.Lookup[0x85] = NewInstruction(STA, 2, 3, ZeroPage)
+	cpu.Lookup[0x95] = NewInstruction(STA, 2, 4, ZeroPageX)
+	cpu.Lookup[0x8d] = NewInstruction(STA, 3, 4, Absolute)
+	cpu.Lookup[0x9d] = NewInstruction(STA, 3, 5, AbsoluteX)
+	cpu.Lookup[0x99] = NewInstruction(STA, 3, 5, AbsoluteY)
+	cpu.Lookup[0x81] = NewInstruction(STA, 2, 6, IndirectX)
+	cpu.Lookup[0x91] = NewInstruction(STA, 2, 6, IndirectY)
+	// STX
+	cpu.Lookup[0x86] = NewInstruction(STX, 2, 3, ZeroPage)
+	cpu.Lookup[0x96] = NewInstruction(STX, 2, 4, ZeroPageY)
+	cpu.Lookup[0x8e] = NewInstruction(STX, 3, 4, Absolute)
+	//STY
+	cpu.Lookup[0x84] = NewInstruction(STY, 2, 3, ZeroPage)
+	cpu.Lookup[0x94] = NewInstruction(STY, 2, 4, ZeroPageX)
+	cpu.Lookup[0x8c] = NewInstruction(STY, 3, 4, Absolute)
+
+	/* Flags clear */
+	cpu.Lookup[0xd8] = NewInstruction(CLD, 1, 2, Implied)
+	cpu.Lookup[0x58] = NewInstruction(CLI, 1, 2, Implied)
+	cpu.Lookup[0xb8] = NewInstruction(CLV, 1, 2, Implied)
+	cpu.Lookup[0x18] = NewInstruction(CLC, 1, 2, Implied)
+	cpu.Lookup[0x38] = NewInstruction(SEC, 1, 2, Implied)
+	cpu.Lookup[0x78] = NewInstruction(SEI, 1, 2, Implied)
+	cpu.Lookup[0xf8] = NewInstruction(SED, 1, 2, Implied)
+
+	cpu.Lookup[0xaa] = NewInstruction(TAX, 1, 2, Implied)
+	cpu.Lookup[0xa8] = NewInstruction(TAY, 1, 2, Implied)
+	cpu.Lookup[0xba] = NewInstruction(TSX, 1, 2, Implied)
+	cpu.Lookup[0x8a] = NewInstruction(TXA, 1, 2, Implied)
+	cpu.Lookup[0x9a] = NewInstruction(TXS, 1, 2, Implied)
+	cpu.Lookup[0x98] = NewInstruction(TYA, 1, 2, Implied)
+	/* Stack */
+	cpu.Lookup[0x48] = NewInstruction(PHA, 1, 3, Implied)
+	cpu.Lookup[0x68] = NewInstruction(PLA, 1, 4, Implied)
+	cpu.Lookup[0x08] = NewInstruction(PHP, 1, 3, Implied)
+	cpu.Lookup[0x28] = NewInstruction(PLP, 1, 4, Implied)
+	/* unofficial */
+	cpu.Lookup[0xc7] = NewInstruction(DCP, 2, 5, ZeroPage)
+	cpu.Lookup[0xd7] = NewInstruction(DCP, 2, 6, ZeroPageX)
+	cpu.Lookup[0xCF] = NewInstruction(DCP, 3, 6, Absolute)
+	cpu.Lookup[0xdF] = NewInstruction(DCP, 3, 7, AbsoluteX)
+	cpu.Lookup[0xdb] = NewInstruction(DCP, 3, 7, AbsoluteY)
+	cpu.Lookup[0xd3] = NewInstruction(DCP, 2, 8, IndirectY)
+	cpu.Lookup[0xc3] = NewInstruction(DCP, 2, 8, IndirectX)
+
+	cpu.Lookup[0x27] = NewInstruction(RLA, 2, 5, ZeroPage)
+	cpu.Lookup[0x37] = NewInstruction(RLA, 2, 6, ZeroPageX)
+	cpu.Lookup[0x2F] = NewInstruction(RLA, 3, 6, Absolute)
+	cpu.Lookup[0x3F] = NewInstruction(RLA, 3, 7, AbsoluteX)
+	cpu.Lookup[0x3b] = NewInstruction(RLA, 3, 7, AbsoluteY)
+	cpu.Lookup[0x33] = NewInstruction(RLA, 2, 8, IndirectY)
+	cpu.Lookup[0x23] = NewInstruction(RLA, 2, 8, IndirectX)
+
+	cpu.Lookup[0x07] = NewInstruction(SLO, 2, 5, ZeroPage)
+	cpu.Lookup[0x17] = NewInstruction(SLO, 2, 6, ZeroPageX)
+	cpu.Lookup[0x0F] = NewInstruction(SLO, 3, 6, Absolute)
+	cpu.Lookup[0x1f] = NewInstruction(SLO, 3, 7, AbsoluteX)
+	cpu.Lookup[0x1b] = NewInstruction(SLO, 3, 7, AbsoluteY)
+	cpu.Lookup[0x03] = NewInstruction(SLO, 2, 8, IndirectX)
+	cpu.Lookup[0x13] = NewInstruction(SLO, 2, 8, IndirectY)
+
+	cpu.Lookup[0x47] = NewInstruction(SRE, 2, 5, ZeroPage)
+	cpu.Lookup[0x57] = NewInstruction(SRE, 2, 6, ZeroPageX)
+	cpu.Lookup[0x4F] = NewInstruction(SRE, 3, 6, Absolute)
+	cpu.Lookup[0x5f] = NewInstruction(SRE, 3, 7, AbsoluteX)
+	cpu.Lookup[0x5b] = NewInstruction(SRE, 3, 7, AbsoluteY)
+	cpu.Lookup[0x43] = NewInstruction(SRE, 2, 8, IndirectX)
+	cpu.Lookup[0x53] = NewInstruction(SRE, 2, 8, IndirectY)
+
+	cpu.Lookup[0x80] = NewInstruction(NOPU, 2, 2, Immediate)
+	cpu.Lookup[0x82] = NewInstruction(NOPU, 2, 2, Immediate)
+	cpu.Lookup[0x89] = NewInstruction(NOPU, 2, 2, Immediate)
+	cpu.Lookup[0xc2] = NewInstruction(NOPU, 2, 2, Immediate)
+	cpu.Lookup[0xe2] = NewInstruction(NOPU, 2, 2, Immediate)
+	cpu.Lookup[0x04] = NewInstruction(NOPU, 2, 3, ZeroPage)
+	cpu.Lookup[0x44] = NewInstruction(NOPU, 2, 3, ZeroPage)
+	cpu.Lookup[0x64] = NewInstruction(NOPU, 2, 3, ZeroPage)
+	cpu.Lookup[0x14] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0x34] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0x54] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0x74] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0xd4] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0xf4] = NewInstruction(NOPU, 2, 4, ZeroPageX)
+	cpu.Lookup[0x0c] = NewInstruction(NOPU, 3, 4, Absolute)
+	cpu.Lookup[0x1c] = NewInstruction(NOPU, 3, 4 /*or 5*/, AbsoluteX)
+	cpu.Lookup[0x3c] = NewInstruction(NOPU, 3, 4 /*or 5*/, AbsoluteX)
+	cpu.Lookup[0x5c] = NewInstruction(NOPU, 3, 4 /*or 5*/, AbsoluteX)
+	cpu.Lookup[0x7c] = NewInstruction(NOPU, 3, 4 /*or 5*/, AbsoluteX)
+	cpu.Lookup[0xdc] = NewInstruction(NOPU, 3, 4 /* or 5*/, AbsoluteX)
+	cpu.Lookup[0xfc] = NewInstruction(NOPU, 3, 4 /* or 5*/, AbsoluteX)
+
+	cpu.Lookup[0x02] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x12] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x22] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x32] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x42] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x52] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x62] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x72] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x92] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0xb2] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0xd2] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0xf2] = NewInstruction(NOPU, 1, 2, Implied)
+
+	cpu.Lookup[0x1a] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x3a] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x5a] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0x7a] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0xda] = NewInstruction(NOPU, 1, 2, Implied)
+	cpu.Lookup[0xfa] = NewInstruction(NOPU, 1, 2, Implied)
+
+	cpu.Lookup[0xCB] = NewInstruction(AXS, 2, 2, Immediate)
+
+	cpu.Lookup[0x6B] = NewInstruction(ARR, 2, 2, Immediate)
+
+	cpu.Lookup[0xeb] = NewInstruction(SBCU, 2, 2, Immediate)
+
+	cpu.Lookup[0x0b] = NewInstruction(ANC, 2, 2, Immediate)
+	cpu.Lookup[0x2b] = NewInstruction(ANC, 2, 2, Immediate)
+
+	cpu.Lookup[0x4b] = NewInstruction(ALR, 2, 2, Immediate)
+
+	cpu.Lookup[0x67] = NewInstruction(RRA, 2, 5, ZeroPage)
+	cpu.Lookup[0x77] = NewInstruction(RRA, 2, 6, ZeroPageX)
+	cpu.Lookup[0x6f] = NewInstruction(RRA, 3, 6, Absolute)
+	cpu.Lookup[0x7f] = NewInstruction(RRA, 3, 7, AbsoluteX)
+	cpu.Lookup[0x7b] = NewInstruction(RRA, 3, 7, AbsoluteY)
+	cpu.Lookup[0x63] = NewInstruction(RRA, 2, 8, IndirectX)
+	cpu.Lookup[0x73] = NewInstruction(RRA, 2, 8, IndirectY)
+
+	cpu.Lookup[0xe7] = NewInstruction(ISB, 2, 5, ZeroPage)
+	cpu.Lookup[0xf7] = NewInstruction(ISB, 2, 6, ZeroPageX)
+	cpu.Lookup[0xef] = NewInstruction(ISB, 3, 6, Absolute)
+	cpu.Lookup[0xff] = NewInstruction(ISB, 3, 7, AbsoluteX)
+	cpu.Lookup[0xfb] = NewInstruction(ISB, 3, 7, AbsoluteY)
+	cpu.Lookup[0xe3] = NewInstruction(ISB, 2, 8, IndirectX)
+	cpu.Lookup[0xf3] = NewInstruction(ISB, 2, 8, IndirectY)
+
+	// highly unstable and not used
+	cpu.Lookup[0xab] = NewInstruction(LXA, 2, 3, Immediate)
+	cpu.Lookup[0x8b] = NewInstruction(XAA, 2, 3, Immediate)
+	cpu.Lookup[0xbb] = NewInstruction(LAS, 3, 2, AbsoluteY)
+	cpu.Lookup[0x9b] = NewInstruction(TAS, 3, 2, AbsoluteY)
+	cpu.Lookup[0x93] = NewInstruction(AHX, 2 /* guess */, 8, IndirectY)
+	cpu.Lookup[0x9f] = NewInstruction(AHX, 3 /* guess */, 4 /* or 5*/, AbsoluteY)
+	cpu.Lookup[0x9e] = NewInstruction(SHX, 3 /* guess */, 4 /* or 5*/, AbsoluteY)
+	cpu.Lookup[0x9c] = NewInstruction(SHY, 3 /* guess */, 4 /* or 5*/, AbsoluteX)
+
+	cpu.Lookup[0xa7] = NewInstruction(LAX, 2, 3, ZeroPage)
+	cpu.Lookup[0xb7] = NewInstruction(LAX, 2, 4, ZeroPageY)
+	cpu.Lookup[0xaf] = NewInstruction(LAX, 3, 4, Absolute)
+	cpu.Lookup[0xbf] = NewInstruction(LAX, 3, 4, AbsoluteY)
+	cpu.Lookup[0xa3] = NewInstruction(LAX, 2, 6, IndirectX)
+	cpu.Lookup[0xb3] = NewInstruction(LAX, 2, 5, IndirectY)
+
+	cpu.Lookup[0x87] = NewInstruction(SAX, 2, 3, ZeroPage)
+	cpu.Lookup[0x97] = NewInstruction(SAX, 2, 4, ZeroPageY)
+	cpu.Lookup[0x8f] = NewInstruction(SAX, 3, 4, Absolute)
+	cpu.Lookup[0x83] = NewInstruction(SAX, 2, 6, IndirectX)
 }
