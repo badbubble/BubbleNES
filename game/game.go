@@ -55,14 +55,7 @@ func (g *Game) Run() {
 		g.DrawPatternTable()
 		g.DrawCart()
 		g.DrawPPU(Frame)
-		//v := g.Nes.PPU.VRamAddr.Data
-		if g.Nes.CPU.CycleCount == 0xE837 {
-			fmt.Println("")
-		}
 		g.DrawMem()
-		//if v != g.Nes.PPU.VRamAddr.Data {
-		//	panic("EEEE")
-		//}
 
 		if tick-LastTick >= 1000 {
 			LastTick = tick
