@@ -44,14 +44,18 @@ const (
 	PPURamMirrorsStart uint16 = 0x2000
 	PPURamMirrorsEnd   uint16 = 0x3FFF
 	PPUMaxRam          uint16 = 0x0007
+	ControllerStart    uint16 = 0x4016
+	ControllerEnd      uint16 = 0x4017
 )
 
 type Bus struct {
 	// Nes cpu only address 2kb
-	CPURam [CPURamSize]uint8
-	PPURam [PPURamSize]uint8
-	Cart   *cartridge.Cartridge
-	PPU    *ppu.PPU
+	CPURam          [CPURamSize]uint8
+	PPURam          [PPURamSize]uint8
+	Cart            *cartridge.Cartridge
+	PPU             *ppu.PPU
+	Controllers     [2]uint8
+	ControllerState [2]uint8
 }
 
 func (b *Bus) CPURead(addr uint16, isTrace bool) uint8 {
@@ -61,6 +65,14 @@ func (b *Bus) CPURead(addr uint16, isTrace bool) uint8 {
 		return b.CPURam[addr&CPUMaxRam]
 	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
 		return b.PPU.CPURead(addr&PPUMaxRam, isTrace)
+	} else if addr >= ControllerStart && addr <= ControllerEnd {
+		if b.ControllerState[addr&0x0001]&0x80 != 0 {
+			data = 0x01
+		} else {
+			data = 0x00
+		}
+		b.ControllerState[addr&0x0001] <<= 1
+		return data
 	}
 	return 0
 }
@@ -72,6 +84,8 @@ func (b *Bus) CPUWrite(addr uint16, value uint8) {
 		b.CPURam[addr&CPUMaxRam] = value
 	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
 		b.PPU.CPUWrite(addr&PPUMaxRam, value)
+	} else if addr >= ControllerStart && addr <= ControllerEnd {
+		b.ControllerState[addr&0x1000] = b.Controllers[addr&0x1000]
 	}
 }
 
@@ -83,8 +97,10 @@ func (b *Bus) Reset() {
 func New(cart *cartridge.Cartridge, ppu *ppu.PPU) *Bus {
 
 	return &Bus{
-		CPURam: [2048]uint8{},
-		Cart:   cart,
-		PPU:    ppu,
+		CPURam:          [2048]uint8{},
+		Cart:            cart,
+		PPU:             ppu,
+		Controllers:     [2]uint8{},
+		ControllerState: [2]uint8{},
 	}
 }
