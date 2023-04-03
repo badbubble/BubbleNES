@@ -18,6 +18,14 @@ var (
 	HEIGHT    int32   = 1000
 	SCALE     float32 = 3.0
 	FontSize  int     = 30
+	KEY_W     uint8   = 0b0000_1000
+	KEY_S     uint8   = 0b0000_0100
+	KEY_A     uint8   = 0b0000_0010
+	KEY_D     uint8   = 0b0000_0001
+	KEY_L     uint8   = 0b1000_0000
+	KEY_K     uint8   = 0b0100_0000
+	KEY_O     uint8   = 0b0010_0000
+	KEY_P     uint8   = 0b0001_0000
 )
 
 type Game struct {
@@ -34,12 +42,35 @@ func (g *Game) Run() {
 
 	// Keep the window open until the user closes it
 	for {
+
 		tick := sdl.GetTicks64()
+		g.Nes.Bus.Controllers[0] = 0x00
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
+			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				return
+			case *sdl.KeyboardEvent:
+				if t.Repeat == 0 && t.Type == sdl.KEYDOWN {
+					switch t.Keysym.Scancode {
+					case sdl.SCANCODE_W:
+						g.Nes.Bus.Controllers[0] |= KEY_W
+					case sdl.SCANCODE_S:
+						g.Nes.Bus.Controllers[0] |= KEY_S
+					case sdl.SCANCODE_A:
+						g.Nes.Bus.Controllers[0] |= KEY_A
+					case sdl.SCANCODE_D:
+						g.Nes.Bus.Controllers[0] |= KEY_D
+					case sdl.SCANCODE_O:
+						g.Nes.Bus.Controllers[0] |= KEY_O
+					case sdl.SCANCODE_P:
+						g.Nes.Bus.Controllers[0] |= KEY_P
+					case sdl.SCANCODE_K:
+						g.Nes.Bus.Controllers[0] |= KEY_K
+					case sdl.SCANCODE_L:
+						g.Nes.Bus.Controllers[0] |= KEY_L
+					}
+				}
 			}
 		}
 		err := g.Renderer.Clear()
@@ -71,8 +102,8 @@ func (g *Game) Run() {
 		g.Renderer.Present()
 		elapsed := sdl.GetTicks64() - tick
 
-		if elapsed < 1000/60 {
-			sdl.Delay(uint32(1000/60 - elapsed))
+		if elapsed < 1000/30 {
+			sdl.Delay(uint32(1000/30 - elapsed))
 		}
 
 	}
