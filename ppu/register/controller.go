@@ -37,7 +37,7 @@ func (c *ControllerRegister) GetNameTableX() uint8 {
 }
 
 func (c *ControllerRegister) GetNameTableY() uint8 {
-	return c.Status & 0x02
+	return c.Status & 0x02 >> 1
 }
 
 func (cr *ControllerRegister) Update(value uint8) {
