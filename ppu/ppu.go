@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 )
 
 const (
@@ -91,13 +92,17 @@ type PPU struct {
 	PatternTableImage  [2]*image.RGBA
 	InternalDataBuffer uint8
 	// Registers
-	Controller register.ControllerRegister // 0x2000
-	Mask       register.MaskRegister       // 0x2001
-	Status     register.StatusRegister     // 0x2002
-	OMAAddr    uint8                       // 0x2003
-	OMAData    [OMADataSize]uint8          // 0x2004
-	Scroll     register.ScrollRegister     // 0x2005
-	Address    register.AddressRegister    // 0x2006
+	Controller     register.ControllerRegister // 0x2000
+	Mask           register.MaskRegister       // 0x2001
+	Status         register.StatusRegister     // 0x2002
+	OMAAddr        uint8                       // 0x2003
+	OMAData        [OMADataSize]uint8          // 0x2004
+	Scroll         register.ScrollRegister     // 0x2005
+	Address        register.AddressRegister    // 0x2006
+	Oam            [64]register.OAM
+	OamAddr        uint8
+	SpriteScanline [8]register.OAM
+	SpriteCount    int
 
 	Cart *cartridge.Cartridge
 
@@ -123,6 +128,11 @@ type PPU struct {
 	BGShifterAttributeLow  uint16
 	BGShifterAttributeHigh uint16
 
+	SpriteShifterPatternLow  [8]uint8
+	SpriteShifterPatternHigh [8]uint8
+	IsSpriteZeroHitPossible  bool
+	IsSpriteZeroBeingRender  bool
+
 	Debug bool
 }
 
@@ -132,7 +142,15 @@ func (p *PPU) Clock() {
 			p.Cycles = 1
 		}
 		if p.Scanline == -1 && p.Cycles == 1 {
+
 			p.Status.SetVBlankStatus(false)
+			p.Status.SetSpriteOverflow(false)
+			p.Status.SetSpriteZeroHit(false)
+
+			for i := 0; i < 8; i++ {
+				p.SpriteShifterPatternHigh[i] = 0x00
+				p.SpriteShifterPatternLow[i] = 0x00
+			}
 		}
 		if (p.Cycles >= 2 && p.Cycles < 258) || (p.Cycles >= 321 && p.Cycles < 338) {
 			p.UpdateShifters()
@@ -198,7 +216,128 @@ func (p *PPU) Clock() {
 		if p.Scanline == -1 && p.Cycles >= 280 && p.Cycles < 305 {
 			p.TransferAddressY()
 		}
+
+		//fmt.Printf("C:%d S:%d\n", p.Cycles, p.Scanline)
+
+		if p.Cycles == 257 && p.Scanline >= 0 {
+			for i := 0; i < 8; i++ {
+				p.SpriteScanline[i] = register.OAM{
+					X:         0xFF,
+					Y:         0xFF,
+					TileID:    0xFF,
+					Attribute: 0xFF,
+				}
+			}
+
+			p.SpriteCount = 0
+			NSprite := 0
+			p.IsSpriteZeroHitPossible = false
+
+			for NSprite < 64 && p.SpriteCount < 9 {
+				diff := int16(p.Scanline) - int16(uint(p.Oam[NSprite].Y))
+				//fmt.Printf("Cycle:%d Scanline:%d Y:%d Diff:%d NS:%d SC:%d\n", p.Cycles, p.Scanline, p.Oam[NSprite].Y, diff, NSprite, p.SpriteCount)
+
+				if diff >= 0 && diff < int16(p.Controller.GerSpriteSize()) {
+					if p.SpriteCount < 8 {
+						if NSprite == 0 {
+							p.IsSpriteZeroHitPossible = true
+						}
+						p.SpriteScanline[p.SpriteCount] = p.Oam[NSprite]
+						//fmt.Printf("Cycle:%d Scanline:%d N:%d SC:%d X:%d Y:%d A:%d ID:%d\n", p.Cycles, p.Scanline, NSprite, p.SpriteCount, p.SpriteScanline[p.SpriteCount].X, p.SpriteScanline[p.SpriteCount].Y, p.SpriteScanline[p.SpriteCount].Attribute, p.SpriteScanline[p.SpriteCount].TileID)
+						//for i := 0; i < 64; i++ {
+						//	fmt.Printf("(%X|%X|%X|%X) ", p.Oam[i].Y, p.Oam[i].TileID, p.Oam[i].Attribute, p.Oam[i].X)
+						//}
+						//fmt.Println()
+						p.SpriteCount += 1
+					}
+				}
+				NSprite += 1
+			}
+
+			//fmt.Printf("Cycle:%d Scanline:%d SC:%d N:%d\n", p.Cycles, p.Scanline, p.SpriteCount, NSprite)
+			//for i := 0; i < p.SpriteCount; i++ {
+			//	fmt.Printf("(%X|%X|%X|%X) ", p.SpriteScanline[i].Y, p.SpriteScanline[i].TileID, p.SpriteScanline[i].Attribute, p.SpriteScanline[i].X)
+			//}
+			//fmt.Println()
+			// overflow check
+			if p.SpriteCount > 8 {
+				p.Status.SetSpriteOverflow(true)
+			}
+		}
+
+		if p.Cycles == 340 {
+			for i := 0; i < p.SpriteCount; i++ {
+				var highBits uint8
+				var lowBits uint8
+				var lowAddr uint16
+				var highAddr uint16
+				//fmt.Printf("(1) i:%d Cycle:%d Scanline:%d X:%d Y:%d A:%d ID:%d\n", i, p.Cycles, p.Scanline, p.SpriteScanline[i].X, p.SpriteScanline[i].Y, p.SpriteScanline[i].Attribute, p.SpriteScanline[i].TileID)
+
+				if p.Controller.GerSpriteSize() == 0x08 {
+					// 8 x 8
+					if p.SpriteScanline[i].Attribute&0x80 == 0x00 {
+						lowAddr = p.Controller.GetSpritePatternAddress() |
+							(uint16(p.SpriteScanline[i].TileID) << 4) |
+							uint16(p.Scanline-int(p.SpriteScanline[i].Y))
+					} else {
+						lowAddr = p.Controller.GetSpritePatternAddress() |
+							(uint16(p.SpriteScanline[i].TileID) << 4) |
+							7 - uint16(p.Scanline-int(p.SpriteScanline[i].Y))
+					}
+				} else {
+					// 8 x 16 up
+					// first
+					if p.Scanline-int(p.SpriteScanline[i].Y) < 8 {
+						// normal
+						if p.SpriteScanline[i].Attribute&0x80 == 0x00 {
+							lowAddr = (uint16(p.SpriteScanline[i].TileID&0x01) << 12) |
+								(uint16(p.SpriteScanline[i].TileID&0xFE) << 4) |
+								(uint16(p.Scanline-int(p.SpriteScanline[i].Y)) & 0x07)
+						} else {
+							// convert
+							lowAddr = (uint16(p.SpriteScanline[i].TileID&0x01) << 12) |
+								(uint16(p.SpriteScanline[i].TileID&0xFE) << 4) |
+								(7 - (uint16(p.Scanline-int(p.SpriteScanline[i].Y)) & 0x07))
+						}
+					} else {
+						// 8 x 16 down
+						if p.SpriteScanline[i].Attribute&0x80 == 0x00 {
+							lowAddr = (uint16(p.SpriteScanline[i].TileID&0x01) << 12) |
+								(uint16((p.SpriteScanline[i].TileID&0xFE)+1) << 4) |
+								(uint16(p.Scanline-int(p.SpriteScanline[i].Y)) & 0x07)
+						} else {
+							lowAddr = (uint16(p.SpriteScanline[i].TileID&0x01) << 12) |
+								(uint16((p.SpriteScanline[i].TileID&0xFE)+1) << 4) |
+								(7 - (uint16(p.Scanline-int(p.SpriteScanline[i].Y)) & 0x07))
+						}
+
+					}
+				}
+				highAddr = lowAddr + 8
+				lowBits = p.PPURead(lowAddr)
+				highBits = p.PPURead(highAddr)
+
+				if p.SpriteScanline[i].Attribute&0x40 != 0 {
+					lowBits = p.FlipByte(lowBits)
+					highBits = p.FlipByte(highBits)
+				}
+				p.SpriteShifterPatternLow[i] = lowBits
+				p.SpriteShifterPatternHigh[i] = highBits
+				//fmt.Printf("(2) i:%d Cycle:%d Scanline:%d HB:%d LB:%d\n", i, p.Cycles, p.Scanline, highBits, lowBits)
+
+				//fmt.Printf("(3) i:%d Cycle:%d Scanline:%d X:%d Y:%d A:%d ID:%d\n", i, p.Cycles, p.Scanline, p.SpriteScanline[i].X, p.SpriteScanline[i].Y, p.SpriteScanline[i].Attribute, p.SpriteScanline[i].TileID)
+
+			}
+		}
 	}
+	//if p.SpriteCount > 0 {
+	//	fmt.Printf("(4) ")
+	//	for i := 0; i < p.SpriteCount; i++ {
+	//		fmt.Printf("(%X|%X|%X|%X) ", p.SpriteScanline[i].Y, p.SpriteScanline[i].TileID, p.SpriteScanline[i].Attribute, p.SpriteScanline[i].X)
+	//	}
+	//	fmt.Println()
+	//}
+
 	if p.Scanline == 240 {
 
 	}
@@ -249,9 +388,81 @@ func (p *PPU) Clock() {
 		}
 		bgPalette = (p1Pal << 1) | p0Pal
 	}
+
+	var FGPixel uint8 = 0x00
+	var FGPalette uint8 = 0x00
+	var FGPriority uint8 = 0x00
+	//fmt.Printf("C:%X Pixel:%X Palette:%X\n", p.Cycles, FGPixel, FGPalette)
+
+	if p.Mask.IsShowSP() {
+
+		p.IsSpriteZeroBeingRender = false
+		for i := 0; i < p.SpriteCount; i++ {
+			//fmt.Printf("(4) i:%d Cycle:%d Scanline:%d X:%d Y:%d A:%d ID:%d\n", i, p.Cycles, p.Scanline, p.SpriteScanline[i].X, p.SpriteScanline[i].Y, p.SpriteScanline[i].Attribute, p.SpriteScanline[i].TileID)
+			if p.SpriteScanline[i].X == 0 {
+				var FGPixelHigh uint8
+				var FGPixelLow uint8
+				if p.SpriteShifterPatternHigh[i]&0x80 != 0 {
+					FGPixelHigh = 1
+				}
+				if p.SpriteShifterPatternLow[i]&0x80 != 0 {
+					FGPixelLow = 1
+				}
+
+				FGPixel = FGPixelHigh<<1 | FGPixelLow
+				FGPalette = p.SpriteScanline[i].Attribute&0x03 + 0x04
+				if p.SpriteScanline[i].Attribute&0x20 == 0x00 {
+					FGPriority = 0x01
+				} else {
+					FGPriority = 0x00
+				}
+
+				if FGPixel != 0x00 {
+					if i == 0 {
+						p.IsSpriteZeroBeingRender = true
+					}
+					break
+				}
+			}
+		}
+	}
+	var Pixel uint8 = 0x00
+	var Palette uint8 = 0x00
+
+	if bgPixel == 0x00 && FGPixel == 0x00 {
+		Pixel = 0x00
+		Palette = 0x00
+	} else if bgPixel == 0x00 && FGPixel > 0 {
+		Pixel = FGPixel
+		Palette = FGPalette
+	} else if bgPixel > 0x00 && FGPixel == 0x00 {
+		Pixel = bgPixel
+		Palette = bgPalette
+	} else {
+		if FGPriority == 0x01 {
+			Pixel = FGPixel
+			Palette = FGPalette
+		} else {
+			Pixel = bgPixel
+			Palette = bgPalette
+		}
+
+		if p.IsSpriteZeroBeingRender && p.IsSpriteZeroHitPossible {
+			if !(p.Mask.IsShowBGInLeftMost8P() || p.Mask.IsShowSPInLeftMost8P()) {
+				if p.Cycles >= 9 && p.Cycles < 258 {
+					p.Status.SetSpriteZeroHit(true)
+				}
+			} else {
+				if p.Cycles >= 1 && p.Cycles < 258 {
+					p.Status.SetSpriteZeroHit(true)
+				}
+			}
+		}
+	}
+
 	p.Frame.SetRGBA(p.Cycles-1,
 		p.Scanline,
-		SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))])
+		SystemPalette[p.PPURead(0x3F00+(uint16(Palette)<<2)+uint16(Pixel))])
 	if p.Debug {
 		fmt.Printf("Scanline:%d Cycles:%d NTID:%d NTAID:%d R:%X G:%X B:%X\n", p.Scanline, p.Cycles, p.BGNextTileId, p.BGNextTileAttrib,
 			SystemPalette[p.PPURead(0x3F00+(uint16(bgPalette)<<2)+uint16(bgPixel))&0x3F].R,
@@ -368,8 +579,8 @@ func (p *PPU) GetPatternTable(i, palette int) {
 				tileLSB := p.PPURead(uint16(i*0x1000 + nOffset + row + 0x0000))
 				tileMSB := p.PPURead(uint16(i*0x1000 + nOffset + row + 0x0008))
 				for col := 0; col < 8; col++ {
-					//pixel := ((tileLSB & 0x01) << 1) | (tileMSB & 0x01)
-					pixel := tileMSB&0x01 + tileLSB&0x01
+					pixel := ((tileLSB & 0x01) << 1) | (tileMSB & 0x01)
+					//pixel := tileMSB&0x01 + tileLSB&0x01
 					tileMSB >>= 1
 					tileLSB >>= 1
 					p.PatternTableImage[i].SetRGBA(nTileX*8+(7-col),
@@ -570,6 +781,40 @@ func (p *PPU) PPUWrite(addr uint16, data uint8) {
 	}
 }
 
+func (p *PPU) WriteToOAM(addr uint8, data uint8) {
+
+	idx := uint8(math.Floor(float64(addr / 4)))
+
+	switch addr % 4 {
+	case 0:
+		p.Oam[idx].Y = data
+	case 1:
+		p.Oam[idx].TileID = data
+	case 2:
+		p.Oam[idx].Attribute = data
+	case 3:
+		p.Oam[idx].X = data
+	}
+}
+
+func (p *PPU) ReadFromOAM(addr uint8) (data uint8) {
+
+	idx := uint8(math.Floor(float64(addr / 4)))
+
+	//fmt.Printf("Addr:%X tmpAddr:%X inAddr:%X\n", p.OamAddr, tmpAddr, tmpAddr%4)
+	switch addr % 4 {
+	case 0:
+		data = p.Oam[idx].Y
+	case 1:
+		data = p.Oam[idx].TileID
+	case 2:
+		data = p.Oam[idx].Attribute
+	case 3:
+		data = p.Oam[idx].X
+	}
+	return
+}
+
 func (p *PPU) CPUWrite(addr uint16, data uint8) {
 	switch addr {
 	case 0x0000: // Control
@@ -582,8 +827,9 @@ func (p *PPU) CPUWrite(addr uint16, data uint8) {
 	case 0x0002: // Status
 		break
 	case 0x0003: // OAM Address
-		break
+		p.OamAddr = data
 	case 0x0004: // OAM Data
+		p.WriteToOAM(p.OamAddr, data)
 		break
 	case 0x0005: // Scroll
 		if !p.AddressLatch {
@@ -606,7 +852,6 @@ func (p *PPU) CPUWrite(addr uint16, data uint8) {
 			p.AddressLatch = false
 		}
 	case 0x0007: // PPU Data
-
 		p.PPUWrite(p.VRamAddr.Data, data)
 		p.VRamAddr.Data += uint16(p.Controller.VRAMAddressIncrement())
 	}
@@ -628,6 +873,7 @@ func (p *PPU) CPURead(addr uint16, isTrace bool) uint8 {
 		case 0x0003: // OAM Address
 			break
 		case 0x0004: // OAM Data
+			data = p.ReadFromOAM(p.OamAddr)
 			break
 		case 0x0005: // Scroll
 			break
@@ -761,6 +1007,23 @@ func (p *PPU) UpdateShifters() {
 		p.BGShifterPatternHigh <<= 1
 		p.BGShifterPatternLow <<= 1
 	}
+	if p.Mask.IsShowSP() && p.Cycles >= 1 && p.Cycles < 258 {
+		for i := 0; i < p.SpriteCount; i++ {
+			if p.SpriteScanline[i].X > 0 {
+				p.SpriteScanline[i].X -= 1
+			} else {
+				p.SpriteShifterPatternLow[i] <<= 1
+				p.SpriteShifterPatternHigh[i] <<= 1
+			}
+		}
+	}
+}
+
+func (p *PPU) FlipByte(data uint8) uint8 {
+	data = (data&0xF0)>>4 | (data&0x0F)<<4
+	data = (data&0xCC)>>2 | (data&0x33)<<2
+	data = (data&0xAA)>>1 | (data&0x55)<<1
+	return data
 }
 
 func (p *PPU) Reset() {
