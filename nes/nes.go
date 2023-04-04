@@ -20,7 +20,26 @@ type Nes struct {
 func (nes *Nes) Clock() {
 	nes.PPU.Clock()
 	if nes.SystemCycles%3 == 0 {
-		nes.CPU.Clock()
+		if nes.Bus.IsDMATransfer {
+			if nes.Bus.IsDMADummy {
+				if nes.SystemCycles%2 == 1 {
+					nes.Bus.IsDMADummy = false
+				}
+			} else {
+				if nes.SystemCycles%2 == 0 {
+					nes.Bus.DMAData = nes.Bus.CPURead((uint16(nes.Bus.DMAPage)<<8)|uint16(nes.Bus.DMAAddr), false)
+				} else {
+					nes.PPU.WriteToOAM(nes.Bus.DMAAddr, nes.Bus.DMAData)
+					nes.Bus.DMAAddr += 1
+					if nes.Bus.DMAAddr == 0x00 {
+						nes.Bus.IsDMATransfer = false
+						nes.Bus.IsDMADummy = true
+					}
+				}
+			}
+		} else {
+			nes.CPU.Clock()
+		}
 	}
 	if nes.PPU.NMI {
 		nes.PPU.NMI = false
