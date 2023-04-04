@@ -1,16 +1,36 @@
 # BubbleNes
 ![BubbleNes](.github/nes.gif)
 
-still working on it...
 ## TODOs
+still working on it...
 - [ ] More Mappers
 - [ ] APU
 
 ## Install
+### Requirements
+```bash
+# MAC
+brew install sdl2{,_image,_mixer,_ttf,_gfx} pkg-config
+```
+
+```bash
+# Ubuntu
+apt install libsdl2{,-image,-mixer,-ttf,-gfx}-dev
+```
+for other operating system you can see [this](https://github.com/veandco/go-sdl2#requirements)
+### Build
+
+```bash
+git clone git@github.com:badbubble/BubbleNes.git
+cd BubbleNes/
+go mod tidy
+go build  -o BubbleNes
+```
+
 
 ## Play
 ```bash
-
+./BubbleNes NES_GAME_PATH
 ```
 
 ## Game buttons
