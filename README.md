@@ -17,7 +17,7 @@ brew install sdl2{,_image,_mixer,_ttf,_gfx} pkg-config
 # Ubuntu
 apt install libsdl2{,-image,-mixer,-ttf,-gfx}-dev
 ```
-for other operating system you can see [this](https://github.com/veandco/go-sdl2#requirements)
+for other operating systems you can see [this](https://github.com/veandco/go-sdl2#requirements)
 ### Build
 
 ```bash
