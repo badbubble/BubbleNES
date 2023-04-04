@@ -25,7 +25,7 @@ for other operating systems you can see [this](https://github.com/veandco/go-sdl
 git clone git@github.com:badbubble/BubbleNes.git
 cd BubbleNes/
 go mod tidy
-go build  -o BubbleNes
+go build -o BubbleNes
 ```
 
 
@@ -34,7 +34,7 @@ go build  -o BubbleNes
 ./BubbleNes NES_GAME_PATH
 ```
 
-## Game buttons
+### Game buttons
 | Keyboard | joypads |
 |----------|---------|
 | W        | Up      |
