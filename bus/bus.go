@@ -46,6 +46,7 @@ const (
 	PPUMaxRam          uint16 = 0x0007
 	ControllerStart    uint16 = 0x4016
 	ControllerEnd      uint16 = 0x4017
+	DAMAddress         uint16 = 0x4014
 )
 
 type Bus struct {
@@ -56,6 +57,11 @@ type Bus struct {
 	PPU             *ppu.PPU
 	Controllers     [2]uint8
 	ControllerState [2]uint8
+	DMAPage         uint8
+	DMAAddr         uint8
+	DMAData         uint8
+	IsDMATransfer   bool
+	IsDMADummy      bool
 }
 
 func (b *Bus) CPURead(addr uint16, isTrace bool) uint8 {
@@ -84,6 +90,10 @@ func (b *Bus) CPUWrite(addr uint16, value uint8) {
 		b.CPURam[addr&CPUMaxRam] = value
 	} else if addr >= PPURamMirrorsStart && addr <= PPURamMirrorsEnd {
 		b.PPU.CPUWrite(addr&PPUMaxRam, value)
+	} else if addr == DAMAddress {
+		b.DMAPage = value
+		b.DMAAddr = 0x00
+		b.IsDMATransfer = true
 	} else if addr >= ControllerStart && addr <= ControllerEnd {
 		b.ControllerState[addr&0x1000] = b.Controllers[addr&0x1000]
 	}
@@ -102,5 +112,10 @@ func New(cart *cartridge.Cartridge, ppu *ppu.PPU) *Bus {
 		PPU:             ppu,
 		Controllers:     [2]uint8{},
 		ControllerState: [2]uint8{},
+		IsDMADummy:      true,
+		IsDMATransfer:   false,
+		DMAPage:         0x00,
+		DMAData:         0x00,
+		DMAAddr:         0x00,
 	}
 }
