@@ -15,7 +15,7 @@ import (
 var (
 	TitleName         = "Bubble Nes"
 	WIDTH     int32   = 1280
-	HEIGHT    int32   = 1000
+	HEIGHT    int32   = 1280
 	SCALE     float32 = 3.0
 	FontSize  int     = 30
 	KEY_W     uint8   = 0b0000_1000
@@ -195,14 +195,14 @@ func (g *Game) UpdateFrame() {
 }
 
 func (g *Game) DrawMem() {
-	g.DrawString("Memory Trace", 240, 242, [3]uint8{0x0E, 0xA2, 0x93})
+	g.DrawString("Memory Trace", 245, 340, [3]uint8{0x0E, 0xA2, 0x93})
 	mem := g.Nes.CPU.PC
 	length := g.Nes.CPU.Lookup[g.Nes.CPU.ReadTrace(mem)].Length
 	for i := 0; i < 5; i++ {
 		if i == 0 {
-			g.DrawString(g.Nes.CPU.TraceForUI(mem), 190, int32(255+i*15), [3]uint8{0xF9, 0x4A, 0x29})
+			g.DrawString(g.Nes.CPU.TraceForUI(mem), 200, int32(355+i*15), [3]uint8{0xF9, 0x4A, 0x29})
 		} else {
-			g.DrawString(g.Nes.CPU.TraceForUI(mem), 190, int32(255+i*15), [3]uint8{0x00, 0x23, 0x5B})
+			g.DrawString(g.Nes.CPU.TraceForUI(mem), 200, int32(355+i*15), [3]uint8{0x00, 0x23, 0x5B})
 		}
 
 		mem += length
@@ -211,17 +211,20 @@ func (g *Game) DrawMem() {
 }
 
 func (g *Game) DrawPPU(fps int) {
-	g.DrawString("PPU", 330, 160, [3]uint8{0x0E, 0xA2, 0x93})
-	g.DrawString(fmt.Sprintf("FPS: %d", fps), 315, 175, [3]uint8{0, 0, 0})
+	g.DrawString("PPU", 330, 70, [3]uint8{0x0E, 0xA2, 0x93})
+	g.DrawString(fmt.Sprintf("FPS: %d", fps), 317, 80, [3]uint8{0xE1, 0x12, 0x99})
+	for i := 0; i < 25; i++ {
+		g.DrawString(fmt.Sprintf("%02X: X:%02X Y:%02X ID:%02X AT:%02X", i, g.Nes.PPU.Oam[i].X, g.Nes.PPU.Oam[i].X, g.Nes.PPU.Oam[i].TileID, g.Nes.PPU.Oam[i].Attribute), 275, int32(90+10*i), [3]uint8{0xE1, 0x12, 0x99})
+	}
 
 }
 
 func (g *Game) DrawCart() {
-	g.DrawString("Cartridge", 320, 80, [3]uint8{0x0E, 0xA2, 0x93})
-	g.DrawString(fmt.Sprintf("Mirroring Type: %s", g.Nes.Cart.ScreenMirroring), 280, 95, [3]uint8{0, 0, 0})
-	g.DrawString(fmt.Sprintf("Mapper ID: %d", g.Nes.Cart.MapperID), 280, 110, [3]uint8{0, 0, 0})
-	g.DrawString(fmt.Sprintf("PRG Size: %d bytes", len(g.Nes.Cart.PRGRom)/1024), 280, 125, [3]uint8{0, 0, 0})
-	g.DrawString(fmt.Sprintf("CHR Size: %d bytes", len(g.Nes.Cart.CHRRom)/1024), 280, 140, [3]uint8{0, 0, 0})
+	g.DrawString("Cartridge", 80, 355, [3]uint8{0x0E, 0xA2, 0x93})
+	g.DrawString(fmt.Sprintf("Mirroring Type: %s", g.Nes.Cart.ScreenMirroring), 25, 365, [3]uint8{0, 0, 0})
+	g.DrawString(fmt.Sprintf("Mapper ID: %d", g.Nes.Cart.MapperID), 25, 380, [3]uint8{0, 0, 0})
+	g.DrawString(fmt.Sprintf("PRG Size: %d bytes", len(g.Nes.Cart.PRGRom)/1024), 25, 395, [3]uint8{0, 0, 0})
+	g.DrawString(fmt.Sprintf("CHR Size: %d bytes", len(g.Nes.Cart.CHRRom)/1024), 25, 410, [3]uint8{0, 0, 0})
 }
 
 func (g *Game) DrawPatternTable() {
@@ -239,7 +242,7 @@ func (g *Game) DrawPatternTable() {
 	PatternTbl2Frame, _ := g.Renderer.CreateTextureFromSurface(PatternTbl2Surf)
 	defer PatternTbl2Frame.Destroy()
 
-	g.DrawString("Pattern Tabel", 55, 242, [3]uint8{0x0E, 0xA2, 0x93})
+	g.DrawString("Pattern Tabel", 75, 242, [3]uint8{0x0E, 0xA2, 0x93})
 	g.Renderer.Copy(PatternTbl1Frame, &sdl.Rect{
 		X: 0,
 		Y: 0,
@@ -248,8 +251,8 @@ func (g *Game) DrawPatternTable() {
 	}, &sdl.Rect{
 		X: 5,
 		Y: 253,
-		W: 80,
-		H: 80,
+		W: 100,
+		H: 100,
 	})
 
 	g.Renderer.Copy(PatternTbl2Frame, &sdl.Rect{
@@ -258,10 +261,10 @@ func (g *Game) DrawPatternTable() {
 		W: 128,
 		H: 128,
 	}, &sdl.Rect{
-		X: 95,
+		X: 110,
 		Y: 253,
-		W: 80,
-		H: 80,
+		W: 100,
+		H: 100,
 	})
 
 }
