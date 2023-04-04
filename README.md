@@ -1,4 +1,5 @@
 # BubbleNes
+A Nes emulator written in Go.
 ![BubbleNes](.github/nes.gif)
 
 ## TODOs
