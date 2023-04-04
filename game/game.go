@@ -342,7 +342,7 @@ func (g *Game) DrawString(text string, x int32, y int32, color [3]uint8) {
 	}
 }
 
-func New(gamePath string) *Game {
+func New(gamePath string, fontPath string) *Game {
 	// initialize TTF
 	if err := ttf.Init(); err != nil {
 		panic(err)
@@ -369,7 +369,8 @@ func New(gamePath string) *Game {
 		panic(err)
 	}
 	// create a font
-	font, err := ttf.OpenFont("game/fonts/UbuntuMono-Regular.ttf", FontSize)
+
+	font, err := ttf.OpenFont(fontPath, FontSize)
 	if err != nil {
 		panic(err)
 	}
