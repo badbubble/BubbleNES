@@ -44,33 +44,58 @@ func (g *Game) Run() {
 	for {
 
 		tick := sdl.GetTicks64()
-		g.Nes.Bus.Controllers[0] = 0x00
+
+		//g.Nes.Bus.Controllers[0] = 0x00
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				return
 			case *sdl.KeyboardEvent:
+				// t.Repeat == 0 &&
+				//g.Nes.Bus.Controllers[0] = 0x00
+
 				if t.Repeat == 0 && t.Type == sdl.KEYDOWN {
-					switch t.Keysym.Scancode {
-					case sdl.SCANCODE_W:
+					switch t.Keysym.Sym {
+					case sdl.K_w:
 						g.Nes.Bus.Controllers[0] |= KEY_W
-					case sdl.SCANCODE_S:
+					case sdl.K_s:
 						g.Nes.Bus.Controllers[0] |= KEY_S
-					case sdl.SCANCODE_A:
+					case sdl.K_a:
 						g.Nes.Bus.Controllers[0] |= KEY_A
-					case sdl.SCANCODE_D:
+					case sdl.K_d:
 						g.Nes.Bus.Controllers[0] |= KEY_D
-					case sdl.SCANCODE_O:
+					case sdl.K_o:
 						g.Nes.Bus.Controllers[0] |= KEY_O
-					case sdl.SCANCODE_P:
+					case sdl.K_p:
 						g.Nes.Bus.Controllers[0] |= KEY_P
-					case sdl.SCANCODE_K:
+					case sdl.K_k:
 						g.Nes.Bus.Controllers[0] |= KEY_K
-					case sdl.SCANCODE_L:
+					case sdl.K_l:
 						g.Nes.Bus.Controllers[0] |= KEY_L
 					}
 				}
+				if t.Repeat == 0 && t.Type == sdl.KEYUP {
+					switch t.Keysym.Sym {
+					case sdl.K_w:
+						g.Nes.Bus.Controllers[0] &= ^KEY_W
+					case sdl.K_s:
+						g.Nes.Bus.Controllers[0] &= ^KEY_S
+					case sdl.K_a:
+						g.Nes.Bus.Controllers[0] &= ^KEY_A
+					case sdl.K_d:
+						g.Nes.Bus.Controllers[0] &= ^KEY_D
+					case sdl.K_o:
+						g.Nes.Bus.Controllers[0] &= ^KEY_O
+					case sdl.K_p:
+						g.Nes.Bus.Controllers[0] &= ^KEY_P
+					case sdl.K_k:
+						g.Nes.Bus.Controllers[0] &= ^KEY_K
+					case sdl.K_l:
+						g.Nes.Bus.Controllers[0] &= ^KEY_L
+					}
+				}
+
 			}
 		}
 		err := g.Renderer.Clear()
@@ -102,8 +127,8 @@ func (g *Game) Run() {
 		g.Renderer.Present()
 		elapsed := sdl.GetTicks64() - tick
 
-		if elapsed < 1000/30 {
-			sdl.Delay(uint32(1000/30 - elapsed))
+		if elapsed < 1000/60 {
+			sdl.Delay(uint32(1000/60 - elapsed))
 		}
 
 	}
