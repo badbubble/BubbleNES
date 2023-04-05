@@ -2,10 +2,6 @@
 A Nes emulator written in Go.
 ![BubbleNes](.github/nes.gif)
 
-## TODOs
-still working on it...
-- [ ] More Mappers
-- [ ] APU
 
 ## Install
 ### Requirements
@@ -46,6 +42,34 @@ go build -o BubbleNes
 | K        | A       |
 | L        | B       |
 
+## Features & TODOs
+* CPU emulation:
+    * official instructions
+    * unofficial instructions
+    * tracing
+* PPU emulation
+* Cartridge emulation
+* Mappers
+    * MAPPER_000
+
+Still working on:
+- [ ] Mapper_001
+- [ ] Mapper_002
+- [ ] Mapper_003
+- [ ] Mapper_004
+- [ ] Mapper_005
+- [ ] APU
+- [ ] Game Saving
+- [ ] Online multiplayer
+- [ ] Cheat mode
+- [ ] Change sdl2 to a better 2d game engine
+
+## Tests
+### nestest
+| Official                       | Unofficial                       |
+|--------------------------------|----------------------------------|
+| ![](.github/official_test.png) | ![](.github/unofficial_test.png) |
+                       
 ## Acknowledgments
 - [obelisk-6502](https://web.archive.org/web/20210727210256/http://obelisk.me.uk/6502/index.html)
 - [nesdev.org](https://www.nesdev.org/)
