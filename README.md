@@ -1,6 +1,7 @@
 # BubbleNes
 A Nes emulator written in Go.
-![BubbleNes](.github/nes.gif)
+
+https://github.com/badbubble/BubbleNES/assets/25291611/7565fafd-8183-43ce-91cd-ff655f10b374
 
 
 ## Install
